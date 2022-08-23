@@ -10,7 +10,7 @@ const db = require("../utils/db");
 
 /** Sign up by email */
 exports.signupByEmail = async (req, res) => {
-  const { firstname, lastname, email, password } = req.body;
+  const { firstName, lastName, email, password } = req.body;
 
   const user = await (await db.query(`SELECT * FROM administrators WHERE email = '${email}'`))[0];
   if (user) {
@@ -22,7 +22,7 @@ exports.signupByEmail = async (req, res) => {
 
   db.query(`
     INSERT INTO users (first_name, last_name, email, password) 
-    VALUES ('${firstname}', '${lastname}', '${email}', '${cryptedPassword}');
+    VALUES ('${firstName}', '${lastName}', '${email}', '${cryptedPassword}');
   `)
     .then(() => {
       jwt.sign({ ...req.body }, config.get('jwtSecret'), { expiresIn: '5 days' }, (error, token) => {

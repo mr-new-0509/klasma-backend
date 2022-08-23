@@ -2,6 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { signupByEmail } = require('../controllers/authController');
 
-router.get('/signup-by-email', signupByEmail);
+router.post('/signup-by-email', signupByEmail);
 
 module.exports = router;
