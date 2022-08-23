@@ -12,7 +12,7 @@ const db = require("../utils/db");
 exports.signupByEmail = async (req, res) => {
   const { firstName, lastName, email, password } = req.body;
 
-  const user = await (await db.query(`SELECT * FROM administrators WHERE email = '${email}'`))[0];
+  const user = await (await db.query(`SELECT * FROM users WHERE email = '${email}'`))[0];
   if (user) {
     return res.status(400).send(MESSAGE_USER_ALREADY_EXISTED);
   }
