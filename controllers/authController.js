@@ -37,3 +37,24 @@ exports.signupByEmail = async (req, res) => {
       return res.status(500).send(MESSAGE_DB_ERROR);
     });
 };
+
+/** Sign up by google */
+exports.signupByGoogle = async (req, res) => {
+  const { googleId, firstName, lastName, avatar } = req.body;
+  db.query(`
+    INSERT INTO users (first_name, last_name, googleId, avatar) 
+    VALUES ('${firstName}', '${lastName}', '${googleId}', '${avatar}');
+  `)
+    .then(() => {
+      jwt.sign({ ...req.body }, config.get('jwtSecret'), { expiresIn: '5 days' }, (error, token) => {
+        if (error) {
+          console.log('# error => ', error);
+          return res.status(500).send(MESSAGE_SERVER_ERROR);
+        }
+        return res.status(201).send(token);
+      });
+    })
+    .catch(error => {
+      return res.status(500).send(MESSAGE_DB_ERROR);
+    });
+};
