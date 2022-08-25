@@ -21,8 +21,8 @@ exports.signupByEmail = async (req, res) => {
   const cryptedPassword = await bcrypt.hash(password, salt);
 
   db.query(`
-    INSERT INTO users (first_name, last_name, email, password) 
-    VALUES ('${firstName}', '${lastName}', '${email}', '${cryptedPassword}');
+    INSERT INTO users (first_name, last_name, email, password, register_by_email) 
+    VALUES ('${firstName}', '${lastName}', '${email}', '${cryptedPassword}', 1);
   `)
     .then(() => {
       jwt.sign({ ...req.body }, config.get('jwtSecret'), { expiresIn: '5 days' }, (error, token) => {
