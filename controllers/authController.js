@@ -58,3 +58,27 @@ exports.signupByGoogle = async (req, res) => {
       return res.status(500).send(MESSAGE_DB_ERROR);
     });
 };
+
+/** Sign in by email */
+exports.signinByEmail = async (req, res) => {
+  const { email, password } = req.body;
+
+  const user = await (await db.query(`SELECT * FROM users WHERE email = '${email}'`))[0];
+  if (!user) {
+    return res.status(400).send(MESSAGE_INVALID_CREDENTIALS);
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(400).send(MESSAGE_INVALID_CREDENTIALS);
+  }
+
+  jwt.sign({ ...user }, config.get('jwtSecret'), { expiresIn: '5 days' }, (error, token) => {
+    if (error) {
+      console.log('# error => ', error);
+      return res.status(500).send(MESSAGE_SERVER_ERROR);
+    }
+    console.log('# token => ', token);
+    return res.status(200).send(token);
+  });
+};
