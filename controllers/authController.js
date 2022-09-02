@@ -144,6 +144,7 @@ exports.signupByEmail = async (req, res) => {
 
 /** Sign up by google */
 exports.signupByGoogle = async (req, res) => {
+  console.log('>>>>>> req.body => ', req.body);
   const { userType } = req.body;
   const { googleId, avatar } = req.body.signupData;
 
