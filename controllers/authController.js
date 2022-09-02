@@ -4,7 +4,8 @@ const config = require('config');
 const {
   MESSAGE_USER_ALREADY_EXISTED,
   MESSAGE_INVALID_CREDENTIALS,
-  MESSAGE_SERVER_ERROR
+  MESSAGE_SERVER_ERROR,
+  MESSAGE_USER_NOT_REGISTERED
 } = require("../utils/constants");
 const db = require("../utils/db");
 const { getCurrentDateTime } = require('../utils/functions');
@@ -47,8 +48,8 @@ exports.signupByEmail = async (req, res) => {
 
     //  Insert a user into table "individuals"
     newIndividual = await db.query(`
-      INSERT INTO individuals (first_name, last_name, id_user, created_at)
-      VALUES('${firstName}', '${lastName}', ${userId}, '${currentDateTime}')
+      INSERT INTO individuals (first_name, last_name, id_user, phone_verified created_at)
+      VALUES('${firstName}', '${lastName}', ${userId}, 0, '${currentDateTime}')
     `);
     individualId = newIndividual.insertId;
 
@@ -171,8 +172,8 @@ exports.signupByGoogle = async (req, res) => {
 
     //  Insert a user into table "individuals"
     newIndividual = await db.query(`
-      INSERT INTO individuals (first_name, last_name, id_user, avatar, created_at)
-      VALUES('${firstName}', '${lastName}', ${userId}, '${avatar}' '${currentDateTime}')
+      INSERT INTO individuals (first_name, last_name, id_user, avatar, phone_verified, created_at)
+      VALUES('${firstName}', '${lastName}', ${userId}, '${avatar}', 0, '${currentDateTime}')
     `);
     individualId = newIndividual.insertId;
 
@@ -318,6 +319,10 @@ exports.signinByEmail = async (req, res) => {
       LEFT JOIN users ON companies.id_user = users.id
       WHERE users.email = '${email}' AND users.id_status = 3
     `))[0];
+  }
+
+  if (!userdata) {
+    return res.status(401).send(MESSAGE_USER_NOT_REGISTERED);
   }
 
   passwordMatched = await bcrypt.compare(password, userdata.password);
