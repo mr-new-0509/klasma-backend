@@ -5,7 +5,8 @@ const {
   MESSAGE_USER_ALREADY_EXISTED,
   MESSAGE_INVALID_CREDENTIALS,
   MESSAGE_SERVER_ERROR,
-  MESSAGE_USER_NOT_REGISTERED
+  MESSAGE_USER_NOT_REGISTERED,
+  ID_OF_STATUS_APPROVED
 } = require("../utils/constants");
 const db = require("../utils/db");
 const { getCurrentDateTime } = require('../utils/functions');
@@ -36,7 +37,7 @@ exports.signupByEmail = async (req, res) => {
   //  Insert a user into table "users"
   newUser = await db.query(`
     INSERT INTO users (email, password, id_status, email_verified, created_at)
-    VALUES('${email}', '${encryptedPassword}', 3, 0, '${currentDateTime}')
+    VALUES('${email}', '${encryptedPassword}', ${ID_OF_STATUS_APPROVED}, 0, '${currentDateTime}')
   `);
   userId = newUser.insertId;
 
@@ -48,7 +49,7 @@ exports.signupByEmail = async (req, res) => {
 
     //  Insert a user into table "individuals"
     newIndividual = await db.query(`
-      INSERT INTO individuals (first_name, last_name, id_user, phone_verified created_at)
+      INSERT INTO individuals (first_name, last_name, id_user, phone_verified, created_at)
       VALUES('${firstName}', '${lastName}', ${userId}, 0, '${currentDateTime}')
     `);
     individualId = newIndividual.insertId;
@@ -163,7 +164,7 @@ exports.signupByGoogle = async (req, res) => {
   //  Insert a user into table "users"
   newUser = await db.query(`
     INSERT INTO users (google_id, id_status, email_verified, created_at)
-    VALUES('${googleId}', 3, 1, '${currentDateTime}')
+    VALUES('${googleId}', ${ID_OF_STATUS_APPROVED}, 1, '${currentDateTime}')
   `);
   userId = newUser.insertId;
 
@@ -296,7 +297,7 @@ exports.signinByEmail = async (req, res) => {
         users.password
       FROM individuals 
       LEFT JOIN users ON individuals.id_user = users.id
-      WHERE users.email = '${email}' AND users.id_status = 3
+      WHERE users.email = '${email}' AND users.id_status = ${ID_OF_STATUS_APPROVED}
     `))[0];
   } else {
     userdata = await (await db.query(`
@@ -318,7 +319,7 @@ exports.signinByEmail = async (req, res) => {
         users.password
       FROM companies 
       LEFT JOIN users ON companies.id_user = users.id
-      WHERE users.email = '${email}' AND users.id_status = 3
+      WHERE users.email = '${email}' AND users.id_status = ${ID_OF_STATUS_APPROVED}
     `))[0];
   }
 
