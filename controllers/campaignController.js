@@ -76,7 +76,22 @@ exports.createCampaign = async (req, res) => {
 /** Get campaigns of a company */
 exports.getCampaignsByCompanyId = (req, res) => {
   const { id } = req.params;
-  db.query(`SELECT * FROM campaigns WHERE id_company = ${id}`)
+  db.query(`
+    SELECT * FROM campaigns WHERE id_company = ${id} AND id_status = ${ID_OF_STATUS_APPROVED}
+  `)
     .then(results => res.status(200).send(results))
     .catch(error => res.status(500).send(MESSAGE_SERVER_ERROR));
+};
+
+/** Get a campaign by its id */
+exports.getCampaignById = async (req, res) => {
+  const { id } = req.params;
+  let campaign = (await db.query(`
+    SELECT * FROM campaigns WHERE id = ${id} AND id_status = ${ID_OF_STATUS_APPROVED};
+  `))[0];
+  let faqs = await db.query(`
+    SELECT * FROM faqs WHERE id_campaign = ${id} AND id_status = ${ID_OF_STATUS_APPROVED};
+  `);
+  campaign.faqs = faqs;
+  return res.status(200).send(campaign);
 };
