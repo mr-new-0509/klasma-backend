@@ -89,9 +89,88 @@ exports.getCampaignById = async (req, res) => {
   let campaign = (await db.query(`
     SELECT * FROM campaigns WHERE id = ${id} AND id_status = ${ID_OF_STATUS_APPROVED};
   `))[0];
+
   let faqs = await db.query(`
     SELECT * FROM faqs WHERE id_campaign = ${id} AND id_status = ${ID_OF_STATUS_APPROVED};
   `);
   campaign.faqs = faqs;
+
+  if (campaign.medias) {
+    campaign.medias = campaign.medias.split(',');
+  } else {
+    campaign.medias = [];
+  }
+
   return res.status(200).send(campaign);
+};
+
+/** Update a campaign */
+exports.updateCampaign = async (req, res) => {
+  const { id } = req.params;
+  const { goal_price, faqs } = req.body;
+  const currentDateTime = getCurrentDateTime();
+  let _faqs = [];
+  let sqlParseOfUpdate = '';
+
+  /* ------------- Remove faqs -------------- */
+  if (faqs.length > 0) {
+    _faqs = [...req.body.faqs];
+  }
+  delete req.body.faqs;
+  /* --------------------------------------- */
+
+  /* ------------ Handle goal_price and id_company --------- */
+  delete req.body.id_company;
+
+  sqlParseOfUpdate += `goal_price = ${goal_price}, updated_at = "${currentDateTime}", `;
+
+  delete req.body.goal_price;
+  /* ------------------------------------------------------- */
+
+  /* --------------- Update a compaign -------------- */
+  const fields = Object.keys(req.body);
+
+  fields.forEach((field, index) => {
+    if (index == fields.length - 1) {
+      sqlParseOfUpdate += `${field} = "${String(req.body[field]).replace(/"/g, '\'\'')}"`;
+    } else {
+      sqlParseOfUpdate += `${field} = "${String(req.body[field]).replace(/"/g, '\'\'')}", `;
+    }
+  });
+
+  await db.query(`UPDATE campaigns SET ${sqlParseOfUpdate} WHERE id = ${id};`);
+  /* ------------------------------------------------ */
+
+  /* ----------------- Handle Faqs ------------------ */
+  //  Delete old faqs
+  await db.query(`DELETE FROM faqs WHERE id_campaign = ${id};`);
+
+  //  Insert new faqs
+  if (_faqs.length > 0) {
+    let sqlOfFaqValues = '';
+    for (let i = 0; i < _faqs.length; i += 1) {
+      if (i === _faqs.length - 1) {
+        sqlOfFaqValues += `(
+          "${String(_faqs[i].question).replace(/"/g, '\'\'')}", 
+          "${String(_faqs[i].answer).replace(/"/g, '\'\'')}", 
+          ${ID_OF_STATUS_APPROVED},
+          ${id},
+          "${currentDateTime}"
+        )`;
+      } else {
+        sqlOfFaqValues += `(
+          "${String(_faqs[i].question).replace(/"/g, '\'\'')}", 
+          "${String(_faqs[i].answer).replace(/"/g, '\'\'')}", 
+          ${ID_OF_STATUS_APPROVED},
+          ${id},
+          "${currentDateTime}"
+        ), `;
+      }
+    }
+    await db.query(`
+      INSERT INTO faqs(question, answer, id_status, id_campaign, created_at) VALUES${sqlOfFaqValues};
+    `);
+  }
+  /* ------------------------------------------------ */
+  return res.status(200).send('');
 };
