@@ -86,22 +86,42 @@ exports.getCampaignsByCompanyId = (req, res) => {
 /** Get a campaign by its id */
 exports.getCampaignById = async (req, res) => {
   const { id } = req.params;
-  let campaign = (await db.query(`
-    SELECT * FROM campaigns WHERE id = ${id} AND id_status = ${ID_OF_STATUS_APPROVED};
-  `))[0];
+  try {
+    /* ------------ Get a campaign ------------- */
+    let campaign = (await db.query(`
+      SELECT * FROM campaigns WHERE id = ${id} AND id_status = ${ID_OF_STATUS_APPROVED};
+    `))[0];
 
-  let faqs = await db.query(`
-    SELECT * FROM faqs WHERE id_campaign = ${id} AND id_status = ${ID_OF_STATUS_APPROVED};
-  `);
-  campaign.faqs = faqs;
+    let faqs = await db.query(`
+      SELECT * FROM faqs WHERE id_campaign = ${id} AND id_status = ${ID_OF_STATUS_APPROVED};
+    `);
+    campaign.faqs = faqs;
 
-  if (campaign.medias) {
-    campaign.medias = campaign.medias.split(',');
-  } else {
-    campaign.medias = [];
+    if (campaign.medias) {
+      campaign.medias = campaign.medias.split(',');
+    } else {
+      campaign.medias = [];
+    }
+    /* ----------------------------------------- */
+
+    /* ----------- Get investments of the campaign ------------ */
+    const investments = await db.query(`
+      SELECT
+        investments.id,
+        investments.id_user,
+        investments.price,
+        investments.created_at,
+        investments.updated_at,
+        users.email
+      FROM investments 
+      LEFT JOIN users ON investments.id_user = users.id
+    `);
+    /* -------------------------------------------------------- */
+    return res.status(200).send({ campaign, investments });
+  } catch (error) {
+    console.log('>>>>> error => ', error);
+    return res.status(500).send(MESSAGE_SERVER_ERROR);
   }
-
-  return res.status(200).send(campaign);
 };
 
 /** Update a campaign */
