@@ -4,3 +4,4 @@ exports.MESSAGE_SERVER_ERROR = 'Sorry. Server faced some error. Try again in a f
 exports.MESSAGE_USER_NOT_REGISTERED = "Sorry. You aren't registered. Register, plz.";
 
 exports.ID_OF_STATUS_APPROVED = 3;
+exports.INIT_RAISED_PRICE = 0;

@@ -1,4 +1,4 @@
-const { ID_OF_STATUS_APPROVED, MESSAGE_SERVER_ERROR } = require("../utils/constants");
+const { ID_OF_STATUS_APPROVED, MESSAGE_SERVER_ERROR, INIT_RAISED_PRICE } = require("../utils/constants");
 const db = require("../utils/db");
 const { getCurrentDateTime } = require("../utils/functions");
 
@@ -18,8 +18,8 @@ exports.createCampaign = async (req, res) => {
   /* --------------------------------------- */
 
   /* ------------- Handle goal_price and id_company ------------ */
-  sqlOfFields += 'goal_price, id_company, id_status, created_at, ';
-  sqlOfValues += `${goal_price}, ${id_company}, ${ID_OF_STATUS_APPROVED}, "${currentDateTime}", `;
+  sqlOfFields += 'goal_price, id_company, id_status, created_at, raised_price, ';
+  sqlOfValues += `${goal_price}, ${id_company}, ${ID_OF_STATUS_APPROVED}, "${currentDateTime}", ${INIT_RAISED_PRICE}, `;
   delete req.body.goal_price;
   delete req.body.id_company;
   /* ----------------------------------------------------------- */
@@ -173,4 +173,11 @@ exports.updateCampaign = async (req, res) => {
   }
   /* ------------------------------------------------ */
   return res.status(200).send('');
+};
+
+/** Get all campaigns */
+exports.getAllCampaigns = async (req, res) => {
+  db.query(`SELECT * FROM campaigns;`)
+    .then(results => res.status(200).send(results))
+    .catch(error => res.status(500).send(MESSAGE_SERVER_ERROR));
 };
