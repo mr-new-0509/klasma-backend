@@ -112,6 +112,7 @@ exports.getCampaignById = async (req, res) => {
         investments.id,
         investments.id_user,
         investments.price,
+        investments.transaction_id,
         investments.created_at,
         investments.updated_at,
         users.email
@@ -121,7 +122,6 @@ exports.getCampaignById = async (req, res) => {
     /* -------------------------------------------------------- */
     return res.status(200).send({ campaign, investments });
   } catch (error) {
-    console.log('>>>>> error => ', error);
     return res.status(500).send(MESSAGE_SERVER_ERROR);
   }
 };
@@ -202,4 +202,39 @@ exports.getAllCampaigns = async (req, res) => {
   db.query(`SELECT * FROM campaigns;`)
     .then(results => res.status(200).send(results))
     .catch(error => res.status(500).send(MESSAGE_SERVER_ERROR));
+};
+
+/** Invest to a campaign */
+exports.invest = async (req, res) => {
+  try {
+    const { id_user, price, fee, id_campaign, transaction_id } = req.body;
+    const currentDateTime = getCurrentDateTime();
+
+    const newInvestment = await db.query(`
+      INSERT INTO investments (
+        id_user, 
+        price, 
+        id_campaign, 
+        transaction_id, 
+        created_at, 
+        updated_at
+      ) VALUES (
+        ${id_user}, 
+        ${price}, 
+        ${id_campaign}, 
+        "${transaction_id}", 
+        "${currentDateTime}", 
+        "${currentDateTime}"
+      );
+    `);
+
+    await db.query(`
+      INSERT INTO investment_fees (id_investment, fee) 
+      VALUES (${newInvestment.insertId}, ${fee});
+    `);
+    return res.status(201).send('');
+  } catch (error) {
+    console.log('>>>>>>>> error of invest => ', error);
+    return res.status(500).send(MESSAGE_SERVER_ERROR);
+  }
 };
