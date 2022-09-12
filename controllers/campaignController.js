@@ -89,7 +89,9 @@ exports.getCampaignById = async (req, res) => {
   try {
     /* ------------ Get a campaign ------------- */
     let campaign = (await db.query(`
-      SELECT * FROM campaigns WHERE id = ${id} AND id_status = ${ID_OF_STATUS_APPROVED};
+      SELECT campaigns.*, companies.name AS company_name FROM campaigns 
+      LEFT JOIN companies ON companies.id = campaigns.id_company
+      WHERE campaigns.id = ${id} AND campaigns.id_status = ${ID_OF_STATUS_APPROVED};
     `))[0];
 
     let faqs = await db.query(`
