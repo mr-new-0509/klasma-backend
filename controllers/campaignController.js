@@ -225,14 +225,12 @@ exports.invest = async (req, res) => {
           price, 
           id_campaign, 
           transaction_id, 
-          created_at, 
-          updated_at
+          created_at
         ) VALUES (
           ${id_user}, 
           ${price}, 
           ${id_campaign}, 
           "${transaction_id}", 
-          "${currentDateTime}", 
           "${currentDateTime}"
         );
       `);
@@ -244,10 +242,10 @@ exports.invest = async (req, res) => {
       `);
 
       /* -------------------- Update the campaign --------------------- */
-      const updatedRaisedPrice = campaign.raised + price;
+      const updatedRaisedPrice = campaign.raised_price + price;
 
       //  Update the raised price.
-      let toUpdateFieldsOfCampaigns = `raised = ${updatedRaisedPrice}`;
+      let toUpdateFieldsOfCampaigns = `raised_price = ${updatedRaisedPrice}`;
 
       //  If the raised price is reached or over the goal one, update the status of campaign.
       if (updatedRaisedPrice >= campaign.goal_price) {
