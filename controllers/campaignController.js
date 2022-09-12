@@ -265,3 +265,21 @@ exports.invest = async (req, res) => {
     return res.status(500).send(MESSAGE_SERVER_ERROR);
   }
 };
+
+/** Check whether investment into the campaign is available or not */
+exports.checkIsInvestmentAvailable = (req, res) => {
+  const { campaignId } = req.params;
+  db.query(`SELECT * FROM campaigns WHERE id = ${campaignId};`)
+    .then(results => {
+      if (results.length > 0) {
+        if (results[0].id_status == ID_OF_STATUS_APPROVED) {
+          return res.status(200).send(true);
+        }
+      }
+      return res.status(200).send(false);
+    })
+    .catch(error => {
+      console.log('>>>>>>>> error of checkIsInvestmentAvailable => ', error);
+      return res.status(500).send(MESSAGE_SERVER_ERROR);
+    });
+};
