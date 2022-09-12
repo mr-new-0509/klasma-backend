@@ -1,4 +1,4 @@
-const { ID_OF_STATUS_APPROVED, MESSAGE_SERVER_ERROR, INIT_RAISED_PRICE } = require("../utils/constants");
+const { ID_OF_STATUS_APPROVED, MESSAGE_SERVER_ERROR, INIT_RAISED_PRICE, ID_OF_STATUS_CLOSED, ID_OF_STATUS_COMPLETED, MESSAGE_INVEST_FINISHED } = require("../utils/constants");
 const db = require("../utils/db");
 const { getCurrentDateTime } = require("../utils/functions");
 
@@ -208,31 +208,60 @@ exports.getAllCampaigns = async (req, res) => {
 exports.invest = async (req, res) => {
   try {
     const { id_user, price, fee, id_campaign, transaction_id } = req.body;
-    const currentDateTime = getCurrentDateTime();
 
-    const newInvestment = await db.query(`
-      INSERT INTO investments (
-        id_user, 
-        price, 
-        id_campaign, 
-        transaction_id, 
-        created_at, 
-        updated_at
-      ) VALUES (
-        ${id_user}, 
-        ${price}, 
-        ${id_campaign}, 
-        "${transaction_id}", 
-        "${currentDateTime}", 
-        "${currentDateTime}"
-      );
-    `);
+    const campaign = (await db.query(`
+      SELECT * FROM campaigns 
+      WHERE id = ${id_campaign} 
+      AND id_status = ${ID_OF_STATUS_APPROVED};
+    `))[0];
 
-    await db.query(`
-      INSERT INTO investment_fees (id_investment, fee) 
-      VALUES (${newInvestment.insertId}, ${fee});
-    `);
-    return res.status(201).send('');
+    if (campaign) {
+      const currentDateTime = getCurrentDateTime();
+
+      // Create a new investment
+      const newInvestment = await db.query(`
+        INSERT INTO investments (
+          id_user, 
+          price, 
+          id_campaign, 
+          transaction_id, 
+          created_at, 
+          updated_at
+        ) VALUES (
+          ${id_user}, 
+          ${price}, 
+          ${id_campaign}, 
+          "${transaction_id}", 
+          "${currentDateTime}", 
+          "${currentDateTime}"
+        );
+      `);
+
+      //  Create a fee
+      await db.query(`
+        INSERT INTO investment_fees (id_investment, fee) 
+        VALUES (${newInvestment.insertId}, ${fee});
+      `);
+
+      /* -------------------- Update the campaign --------------------- */
+      const updatedRaisedPrice = campaign.raised + price;
+
+      //  Update the raised price.
+      let toUpdateFieldsOfCampaigns = `raised = ${updatedRaisedPrice}`;
+
+      //  If the raised price is reached or over the goal one, update the status of campaign.
+      if (updatedRaisedPrice >= campaign.goal_price) {
+        toUpdateFieldsOfCampaigns += `, id_status = ${ID_OF_STATUS_COMPLETED}`;
+      }
+
+      await db.query(`
+        UPDATE campaigns SET ${toUpdateFieldsOfCampaigns} WHERE id = ${id_campaign}
+      `);
+      /* --------------------------------------------------------------- */
+
+      return res.status(201).send('');
+    }
+    return res.status(500).send(MESSAGE_INVEST_FINISHED);
   } catch (error) {
     console.log('>>>>>>>> error of invest => ', error);
     return res.status(500).send(MESSAGE_SERVER_ERROR);
