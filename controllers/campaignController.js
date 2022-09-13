@@ -144,10 +144,16 @@ exports.getCampaignById = async (req, res) => {
 /** Update a campaign */
 exports.updateCampaign = async (req, res) => {
   const { id } = req.params;
-  const { goal_price, faqs } = req.body;
+  const { goal_price, faqs, close_at } = req.body;
   const currentDateTime = getCurrentDateTime();
   let _faqs = [];
   let sqlParseOfUpdate = '';
+
+  /* ----------------- Calculate close at ------------------ */
+  let serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  let convertedCloseAt = convertTZ(close_at, serverTimezone);
+  let closeAt = getDateTimeString(convertedCloseAt);
+  /* ------------------------------------------------------- */
 
   /* ------------- Remove faqs -------------- */
   if (faqs.length > 0) {
@@ -159,9 +165,10 @@ exports.updateCampaign = async (req, res) => {
   /* ------------ Handle goal_price and id_company --------- */
   delete req.body.id_company;
 
-  sqlParseOfUpdate += `goal_price = ${goal_price}, updated_at = "${currentDateTime}", `;
+  sqlParseOfUpdate += `goal_price = ${goal_price}, updated_at = "${currentDateTime}", close_at = "${closeAt}", `;
 
   delete req.body.goal_price;
+  delete req.body.close_at;
   /* ------------------------------------------------------- */
 
   /* --------------- Update a compaign -------------- */
