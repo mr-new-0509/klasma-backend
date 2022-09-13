@@ -1,14 +1,27 @@
-const { ID_OF_STATUS_APPROVED, MESSAGE_SERVER_ERROR, INIT_RAISED_PRICE, ID_OF_STATUS_CLOSED, ID_OF_STATUS_COMPLETED, MESSAGE_INVEST_FINISHED } = require("../utils/constants");
+const {
+  ID_OF_STATUS_APPROVED,
+  MESSAGE_SERVER_ERROR,
+  INIT_RAISED_PRICE,
+  ID_OF_STATUS_CLOSED,
+  ID_OF_STATUS_COMPLETED,
+  MESSAGE_INVEST_FINISHED
+} = require("../utils/constants");
 const db = require("../utils/db");
-const { getCurrentDateTime } = require("../utils/functions");
+const { getCurrentDateTime, convertTZ, getDateTimeString } = require("../utils/functions");
 
 /** Create a new campaign */
 exports.createCampaign = async (req, res) => {
-  const { goal_price, id_company, faqs } = req.body;
+  const { goal_price, id_company, faqs, close_at } = req.body;
   const currentDateTime = getCurrentDateTime();
   let sqlOfFields = '(';
   let sqlOfValues = '(';
   let _faqs = [];
+
+  /* ----------------- Calculate close at ------------------ */
+  let serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  let convertedCloseAt = convertTZ(close_at, serverTimezone);
+  let closeAt = getDateTimeString(convertedCloseAt);
+  /* ------------------------------------------------------- */
 
   /* ------------- Remove faqs -------------- */
   if (faqs.length > 0) {
@@ -17,12 +30,13 @@ exports.createCampaign = async (req, res) => {
   delete req.body.faqs;
   /* --------------------------------------- */
 
-  /* ------------- Handle goal_price and id_company ------------ */
-  sqlOfFields += 'goal_price, id_company, id_status, created_at, raised_price, ';
-  sqlOfValues += `${goal_price}, ${id_company}, ${ID_OF_STATUS_APPROVED}, "${currentDateTime}", ${INIT_RAISED_PRICE}, `;
+  /* ------------- Handle goal_price, id_company, close_at ------------ */
+  sqlOfFields += 'goal_price, id_company, id_status, created_at, raised_price, close_at, ';
+  sqlOfValues += `${goal_price}, ${id_company}, ${ID_OF_STATUS_APPROVED}, "${currentDateTime}", ${INIT_RAISED_PRICE}, "${closeAt}", `;
   delete req.body.goal_price;
   delete req.body.id_company;
-  /* ----------------------------------------------------------- */
+  delete req.body.close_at;
+  /* ------------------------------------------------------------------- */
 
   /* ----------------- Create a new campaign ------------------- */
   const fields = Object.keys(req.body);
@@ -77,7 +91,8 @@ exports.createCampaign = async (req, res) => {
 exports.getCampaignsByCompanyId = (req, res) => {
   const { id } = req.params;
   db.query(`
-    SELECT * FROM campaigns WHERE id_company = ${id} AND id_status = ${ID_OF_STATUS_APPROVED}
+    SELECT * FROM campaigns WHERE id_company = ${id} 
+    AND id_status = ${ID_OF_STATUS_APPROVED} OR id_status = ${ID_OF_STATUS_CLOSED};
   `)
     .then(results => res.status(200).send(results))
     .catch(error => res.status(500).send(MESSAGE_SERVER_ERROR));
@@ -269,12 +284,14 @@ exports.invest = async (req, res) => {
 /** Check whether investment into the campaign is available or not */
 exports.checkIsInvestmentAvailable = (req, res) => {
   const { campaignId } = req.params;
-  db.query(`SELECT * FROM campaigns WHERE id = ${campaignId};`)
+  console.log('>>>>>>>>> campaignId => ', campaignId);
+  db.query(`
+    SELECT * FROM campaigns WHERE id = ${campaignId} AND id_status = ${ID_OF_STATUS_APPROVED};
+  `)
     .then(results => {
+      console.log('>>>>> results => ', results);
       if (results.length > 0) {
-        if (results[0].id_status == ID_OF_STATUS_APPROVED) {
-          return res.status(200).send(true);
-        }
+        return res.status(200).send(true);
       }
       return res.status(200).send(false);
     })
