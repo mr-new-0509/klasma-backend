@@ -2,7 +2,6 @@ const {
   ID_OF_STATUS_APPROVED,
   MESSAGE_SERVER_ERROR,
   INIT_RAISED_PRICE,
-  ID_OF_STATUS_CLOSED,
   ID_OF_STATUS_COMPLETED,
   MESSAGE_INVEST_FINISHED
 } = require("../utils/constants");
@@ -91,8 +90,7 @@ exports.createCampaign = async (req, res) => {
 exports.getCampaignsByCompanyId = (req, res) => {
   const { id } = req.params;
   db.query(`
-    SELECT * FROM campaigns WHERE id_company = ${id} 
-    AND id_status = ${ID_OF_STATUS_APPROVED} OR id_status = ${ID_OF_STATUS_CLOSED};
+    SELECT * FROM campaigns WHERE id_company = ${id};
   `)
     .then(results => res.status(200).send(results))
     .catch(error => res.status(500).send(MESSAGE_SERVER_ERROR));
@@ -106,7 +104,7 @@ exports.getCampaignById = async (req, res) => {
     let campaign = (await db.query(`
       SELECT campaigns.*, companies.name AS company_name FROM campaigns 
       LEFT JOIN companies ON companies.id = campaigns.id_company
-      WHERE campaigns.id = ${id} AND campaigns.id_status = ${ID_OF_STATUS_APPROVED};
+      WHERE campaigns.id = ${id};
     `))[0];
 
     let faqs = await db.query(`
