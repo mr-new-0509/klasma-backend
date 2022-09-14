@@ -7,7 +7,8 @@ const {
   updateCampaign,
   getAllCampaigns,
   invest,
-  checkIsInvestmentAvailable
+  checkIsInvestmentAvailable,
+  updateCampaignStatus
 } = require('../controllers/campaignController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
@@ -18,5 +19,6 @@ router.put('/update/:id', authMiddleware, updateCampaign);
 router.get('/get-all', getAllCampaigns);
 router.post('/invest', authMiddleware, invest);
 router.get('/check-is-investment-available/:campaignId', authMiddleware, checkIsInvestmentAvailable);
+router.put('/update-campaign-status/:id', updateCampaignStatus);
 
 module.exports = router;

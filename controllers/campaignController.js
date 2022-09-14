@@ -3,7 +3,8 @@ const {
   MESSAGE_SERVER_ERROR,
   INIT_RAISED_PRICE,
   ID_OF_STATUS_COMPLETED,
-  MESSAGE_INVEST_FINISHED
+  MESSAGE_INVEST_FINISHED,
+  ID_OF_STATUS_CLOSED
 } = require("../utils/constants");
 const db = require("../utils/db");
 const { getCurrentDateTime, convertTZ, getDateTimeString } = require("../utils/functions");
@@ -304,4 +305,14 @@ exports.checkIsInvestmentAvailable = (req, res) => {
       console.log('>>>>>>>> error of checkIsInvestmentAvailable => ', error);
       return res.status(500).send(MESSAGE_SERVER_ERROR);
     });
+};
+
+/** Close a campaign */
+exports.updateCampaignStatus = (req, res) => {
+  const { id } = req.params;
+  const { id_status } = req.body;
+  console.log('>>>>>> id_status => ', id_status);
+  db.query(`UPDATE campaigns SET id_status = ${id_status} WHERE id = ${id};`)
+    .then(response => res.status(200).send(''))
+    .catch(error => res.status(500).send(MESSAGE_SERVER_ERROR));
 };
