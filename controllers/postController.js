@@ -51,6 +51,11 @@ exports.getPostById = async (req, res) => {
     )[0];
 
     if (post) {
+      //  Get favorites
+      const favoritesOfPost = await db.query(`
+        SELECT * FROM post_favorites WHERE id_post = ${post.id};
+      `);
+
       if (post.tags) {
         post.tags = post.tags.split(',');
       } else {
@@ -74,25 +79,25 @@ exports.getPostById = async (req, res) => {
         const individual = (await db.query(`
           SELECT id AS id_individual, first_name, last_name, avatar
           FROM individuals WHERE id_user = ${post.created_by};
-        `));
+        `))[0];
         const creatorOfPost = {
-          email: user.email,
-          ...individual
+          image: individual.avatar,
+          name: `${individual.first_name} ${individual.last_name}`
         };
 
-        return res.status(200).send({ post, creatorOfPost });
+        return res.status(200).send({ post, creatorOfPost, favoritesOfPost });
       } else {
         //  If the creator is a company
 
         const company = (await db.query(`
           SELECT id AS id_company, name, logo
           FROM companies WHERE id_user = ${post.created_by};
-        `));
+        `))[0];
         const creatorOfPost = {
-          email: user.email,
-          ...company
+          image: company.logo,
+          name: company.name
         };
-        return res.status(200).send({ post, creatorOfPost });
+        return res.status(200).send({ post, creatorOfPost, favoritesOfPost });
       }
     } else {
       throw new Error();
@@ -104,7 +109,7 @@ exports.getPostById = async (req, res) => {
 };
 
 /** Get a user's all posts */
-exports.getPostsByUserId = (req, res) => {
+exports.getPostsByUserId = async (req, res) => {
   const { id } = req.params;
   db.query(`SELECT * FROM posts WHERE created_by = ${id} AND id_status = ${ID_OF_STATUS_APPROVED};`)
     .then(results => res.status(200).send(results))
@@ -140,37 +145,50 @@ exports.updatePost = async (req, res) => {
 
 /** Get all posts */
 exports.getAllPosts = (req, res) => {
-  db.query(`SELECT * FROM posts;`)
-    .then(results => res.status(200).send(results))
-    .catch(error => res.status(500).send(MESSAGE_SERVER_ERROR));
+  db.query(`
+    SELECT posts.*, COUNT(post_favorites.id_post) AS numberOfFavorites
+    FROM posts
+    LEFT JOIN post_favorites ON posts.id = post_favorites.id_post 
+    GROUP BY posts.id;
+  `).then(results => {
+    return res.status(200).send(results);
+  }).catch(error => {
+    return res.status(500).send(MESSAGE_SERVER_ERROR);
+  });
 };
 
 /** Set or remove favorite a post */
 exports.handlePostFavorites = async (req, res) => {
   const { id_user, id_post } = req.body;
   try {
-    //  Check whether the user already set favorite for the post
-    const postFavorite = (await db.query(`
-      SELECT * FROM post_favorites 
-      WHERE id_user = ${id_user} AND id_post = ${id_post};
-    `))[0];
-
-    if (postFavorite) {
-      //  If yes, delete it.
-      await db.query(`DELETE FROM post_favorites WHERE id = ${postFavorite.id};`);
+    //  Check if the user is a creator of the post
+    const post = (await db.query(`SELECT created_by FROM posts WHERE id = ${id_post};`))[0];
+    if (post?.created_by == id_user) {
+      return res.status(403).send('');
     } else {
-      //  If no, add it.
-      await db.query(`
-        INSERT INTO post_favorites (id_user, id_post)
-        VALUES (${id_user}, ${id_post});
-      `);
-    }
+      //  Check whether the user already set favorite for the post
+      const postFavorite = (await db.query(`
+        SELECT * FROM post_favorites 
+        WHERE id_user = ${id_user} AND id_post = ${id_post};
+      `))[0];
 
-    //  Get the favorites of the post
-    const postFavorites = (await db.query(`
-      SELECT * FROM post_favorites WHERE id_post = ${id_post};
-    `));
-    return res.status(200).send(postFavorites.length);
+      if (postFavorite) {
+        //  If yes, delete it.
+        await db.query(`DELETE FROM post_favorites WHERE id = ${postFavorite.id};`);
+      } else {
+        //  If no, add it.
+        await db.query(`
+          INSERT INTO post_favorites (id_user, id_post)
+          VALUES (${id_user}, ${id_post});
+        `);
+      }
+
+      //  Get the favorites of the post
+      const postFavorites = (await db.query(`
+        SELECT * FROM post_favorites WHERE id_post = ${id_post};
+      `));
+      return res.status(200).send(postFavorites);
+    }
   } catch (error) {
     console.log('>>>>>>>>>> error of handlePostFavorites => ', error);
     return res.status(500).send(MESSAGE_SERVER_ERROR);

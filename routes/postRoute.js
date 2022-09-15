@@ -14,7 +14,7 @@ router.post('/create', authMiddleware, createPost);
 router.put('/update/:id', authMiddleware, updatePost);
 router.get('/get-post-by-id/:id', getPostById);
 router.get('/get-posts-by-user-id/:id', getPostsByUserId);
-router.get('/get-all-posts', getAllPosts);
+router.get('/get-all', getAllPosts);
 router.post('/handle-post-favorite', authMiddleware, handlePostFavorites);
 
 module.exports = router;
