@@ -4,7 +4,6 @@ const {
   INIT_RAISED_PRICE,
   ID_OF_STATUS_COMPLETED,
   MESSAGE_INVEST_FINISHED,
-  ID_OF_STATUS_CLOSED
 } = require("../utils/constants");
 const db = require("../utils/db");
 const { getCurrentDateTime, convertTZ, getDateTimeString } = require("../utils/functions");

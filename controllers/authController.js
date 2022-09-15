@@ -55,7 +55,7 @@ exports.signupByEmail = async (req, res) => {
         ${VALUE_OF_UNVERIFIED}, 
         ${ID_OF_USER_TYPE_INDIVIDUAL}, 
         '${currentDateTime}'
-      )
+      );
     `);
     userId = newUser.insertId;
 
@@ -67,7 +67,7 @@ exports.signupByEmail = async (req, res) => {
     //  Insert a user into table "individuals"
     newIndividual = await db.query(`
       INSERT INTO individuals (first_name, last_name, id_user, phone_verified, created_at)
-      VALUES('${firstName}', '${lastName}', ${userId}, ${VALUE_OF_UNVERIFIED}, '${currentDateTime}')
+      VALUES('${firstName}', '${lastName}', ${userId}, ${VALUE_OF_UNVERIFIED}, '${currentDateTime}');
     `);
     individualId = newIndividual.insertId;
 
@@ -126,7 +126,7 @@ exports.signupByEmail = async (req, res) => {
         ${VALUE_OF_UNVERIFIED}, 
         ${ID_OF_USER_TYPE_COMPANY}, 
         '${currentDateTime}'
-      )
+      );
     `);
     userId = newUser.insertId;
 
@@ -161,7 +161,7 @@ exports.signupByEmail = async (req, res) => {
         users.email_verified
       FROM companies 
       LEFT JOIN users ON companies.id_user = users.id
-      WHERE companies.id = ${companyId}
+      WHERE companies.id = ${companyId};
     `))[0];
 
     //  Make access token of userdata
@@ -192,7 +192,7 @@ exports.signupByGoogle = async (req, res) => {
   let currentDateTime = getCurrentDateTime();
 
   //  Check whether a user already existed or not
-  user = await (await db.query(`SELECT * FROM users WHERE google_id = '${googleId}'`))[0];
+  user = await (await db.query(`SELECT * FROM users WHERE google_id = '${googleId}';`))[0];
   if (user) {
     return res.status(400).send(MESSAGE_USER_ALREADY_EXISTED);
   }
@@ -212,7 +212,7 @@ exports.signupByGoogle = async (req, res) => {
         ${VALUE_OF_VERIFIED}, 
         ${ID_OF_USER_TYPE_INDIVIDUAL}, 
         '${currentDateTime}'
-      )
+      );
     `);
     userId = newUser.insertId;
 
@@ -235,7 +235,7 @@ exports.signupByGoogle = async (req, res) => {
         '${avatar}', 
         ${VALUE_OF_UNVERIFIED}, 
         '${currentDateTime}'
-      )
+      );
     `);
     individualId = newIndividual.insertId;
 
@@ -261,7 +261,7 @@ exports.signupByGoogle = async (req, res) => {
         users.email_verified
       FROM individuals 
       LEFT JOIN users ON individuals.id_user = users.id
-      WHERE individuals.id = ${individualId}
+      WHERE individuals.id = ${individualId};
     `))[0];
 
     //  Make access token of userdata
@@ -292,7 +292,7 @@ exports.signupByGoogle = async (req, res) => {
         ${VALUE_OF_VERIFIED}, 
         ${ID_OF_USER_TYPE_COMPANY}, 
         '${currentDateTime}'
-      )
+      );
     `);
     userId = newUser.insertId;
 
@@ -326,7 +326,7 @@ exports.signupByGoogle = async (req, res) => {
         users.email_verified
       FROM companies 
       LEFT JOIN users ON companies.id_user = users.id
-      WHERE companies.id = ${companyId}
+      WHERE companies.id = ${companyId};
     `))[0];
 
     //  Make access token of userdata
@@ -375,7 +375,7 @@ exports.signinByEmail = async (req, res) => {
         users.password
       FROM individuals 
       LEFT JOIN users ON individuals.id_user = users.id
-      WHERE users.email = '${email}' AND users.id_status = ${ID_OF_STATUS_APPROVED}
+      WHERE users.email = '${email}' AND users.id_status = ${ID_OF_STATUS_APPROVED};
     `))[0];
   } else {
     userdata = await (await db.query(`
@@ -397,7 +397,7 @@ exports.signinByEmail = async (req, res) => {
         users.password
       FROM companies 
       LEFT JOIN users ON companies.id_user = users.id
-      WHERE users.email = '${email}' AND users.id_status = ${ID_OF_STATUS_APPROVED}
+      WHERE users.email = '${email}' AND users.id_status = ${ID_OF_STATUS_APPROVED};
     `))[0];
   }
 

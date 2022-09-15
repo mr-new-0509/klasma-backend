@@ -30,7 +30,8 @@ app.use(express.json());
 // Define Routes
 app.use('/api/auth', require('./routes/authRoute'));
 app.use('/api/campaign', require('./routes/campaignRoute'));
-app.use('/api/other', require('./routes/otherRoute'))
+app.use('/api/post', require('./routes/postRoute'));
+app.use('/api/other', require('./routes/otherRoute'));
 
 if (process.env.NODE_ENV === 'production') {
   // Set static folder
