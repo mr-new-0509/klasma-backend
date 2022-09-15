@@ -310,8 +310,12 @@ exports.checkIsInvestmentAvailable = (req, res) => {
 exports.updateCampaignStatus = (req, res) => {
   const { id } = req.params;
   const { id_status } = req.body;
-  console.log('>>>>>> id_status => ', id_status);
-  db.query(`UPDATE campaigns SET id_status = ${id_status} WHERE id = ${id};`)
+  const currentDateTime = getCurrentDateTime();
+  db.query(`
+    UPDATE campaigns 
+    SET id_status = ${id_status}, updated_at = "${currentDateTime}" 
+    WHERE id = ${id};
+  `)
     .then(response => res.status(200).send(''))
     .catch(error => res.status(500).send(MESSAGE_SERVER_ERROR));
 };
