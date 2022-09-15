@@ -5,7 +5,8 @@ const {
   getPostsByUserId,
   getPostById,
   updatePost,
-  handlePostFavorites
+  handlePostFavorites,
+  getAllPosts
 } = require('../controllers/postController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
@@ -13,6 +14,7 @@ router.post('/create', authMiddleware, createPost);
 router.put('/update/:id', authMiddleware, updatePost);
 router.get('/get-post-by-id/:id', getPostById);
 router.get('/get-posts-by-user-id/:id', getPostsByUserId);
+router.get('/get-all-posts', getAllPosts);
 router.post('/handle-post-favorite', authMiddleware, handlePostFavorites);
 
 module.exports = router;

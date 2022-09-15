@@ -138,6 +138,13 @@ exports.updatePost = async (req, res) => {
   }
 };
 
+/** Get all posts */
+exports.getAllPosts = (req, res) => {
+  db.query(`SELECT * FROM posts;`)
+    .then(results => res.status(200).send(results))
+    .catch(error => res.status(500).send(MESSAGE_SERVER_ERROR));
+};
+
 /** Set or remove favorite a post */
 exports.handlePostFavorites = async (req, res) => {
   const { id_user, id_post } = req.body;
