@@ -137,3 +137,35 @@ exports.updatePost = async (req, res) => {
     return res.status(500).send(MESSAGE_SERVER_ERROR);
   }
 };
+
+/** Set or remove favorite a post */
+exports.handlePostFavorites = async (req, res) => {
+  const { id_user, id_post } = req.body;
+  try {
+    //  Check whether the user already set favorite for the post
+    const postFavorite = (await db.query(`
+      SELECT * FROM post_favorites 
+      WHERE id_user = ${id_user} AND id_post = ${id_post};
+    `))[0];
+
+    if (postFavorite) {
+      //  If yes, delete it.
+      await db.query(`DELETE FROM post_favorites WHERE id = ${postFavorite.id};`);
+    } else {
+      //  If no, add it.
+      await db.query(`
+        INSERT INTO post_favorites (id_user, id_post)
+        VALUES (${id_user}, ${id_post});
+      `);
+    }
+
+    //  Get the favorites of the post
+    const postFavorites = (await db.query(`
+      SELECT * FROM post_favorites WHERE id_post = ${id_post};
+    `));
+    return res.status(200).send(postFavorites.length);
+  } catch (error) {
+    console.log('>>>>>>>>>> error of handlePostFavorites => ', error);
+    return res.status(500).send(MESSAGE_SERVER_ERROR);
+  }
+};
