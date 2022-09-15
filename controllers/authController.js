@@ -6,7 +6,11 @@ const {
   MESSAGE_INVALID_CREDENTIALS,
   MESSAGE_SERVER_ERROR,
   MESSAGE_USER_NOT_REGISTERED,
-  ID_OF_STATUS_APPROVED
+  ID_OF_STATUS_APPROVED,
+  ID_OF_USER_TYPE_INDIVIDUAL,
+  ID_OF_USER_TYPE_COMPANY,
+  VALUE_OF_UNVERIFIED,
+  VALUE_OF_VERIFIED
 } = require("../utils/constants");
 const db = require("../utils/db");
 const { getCurrentDateTime } = require('../utils/functions');
@@ -34,14 +38,27 @@ exports.signupByEmail = async (req, res) => {
   salt = await bcrypt.genSalt(10);
   encryptedPassword = await bcrypt.hash(password, salt);
 
-  //  Insert a user into table "users"
-  newUser = await db.query(`
-    INSERT INTO users (email, password, id_status, email_verified, created_at)
-    VALUES('${email}', '${encryptedPassword}', ${ID_OF_STATUS_APPROVED}, 0, '${currentDateTime}')
-  `);
-  userId = newUser.insertId;
-
   if (userType == 'individual') {
+    //  Insert a user into table "users"
+    newUser = await db.query(`
+      INSERT INTO users (
+        email, 
+        password, 
+        id_status, 
+        email_verified, 
+        id_user_type, 
+        created_at
+      ) VALUES(
+        '${email}', 
+        '${encryptedPassword}', 
+        ${ID_OF_STATUS_APPROVED}, 
+        ${VALUE_OF_UNVERIFIED}, 
+        ${ID_OF_USER_TYPE_INDIVIDUAL}, 
+        '${currentDateTime}'
+      )
+    `);
+    userId = newUser.insertId;
+
     /* --------------------- If a user is individual ---------------------- */
     const { firstName, lastName } = req.body.signupData;
     let newIndividual = null;
@@ -50,7 +67,7 @@ exports.signupByEmail = async (req, res) => {
     //  Insert a user into table "individuals"
     newIndividual = await db.query(`
       INSERT INTO individuals (first_name, last_name, id_user, phone_verified, created_at)
-      VALUES('${firstName}', '${lastName}', ${userId}, 0, '${currentDateTime}')
+      VALUES('${firstName}', '${lastName}', ${userId}, ${VALUE_OF_UNVERIFIED}, '${currentDateTime}')
     `);
     individualId = newIndividual.insertId;
 
@@ -93,6 +110,26 @@ exports.signupByEmail = async (req, res) => {
       });
     /* -------------------------------------------------------------------- */
   } else {
+    //  Insert a user into table "users"
+    newUser = await db.query(`
+      INSERT INTO users (
+        email, 
+        password, 
+        id_status, 
+        email_verified, 
+        id_user_type, 
+        created_at
+      ) VALUES(
+        '${email}', 
+        '${encryptedPassword}', 
+        ${ID_OF_STATUS_APPROVED}, 
+        ${VALUE_OF_UNVERIFIED}, 
+        ${ID_OF_USER_TYPE_COMPANY}, 
+        '${currentDateTime}'
+      )
+    `);
+    userId = newUser.insertId;
+
     /* ---------------------- If a user is a company ----------------------- */
     const { companyName } = req.body.signupData;
     let newCompany = null;
@@ -145,7 +182,6 @@ exports.signupByEmail = async (req, res) => {
 
 /** Sign up by google */
 exports.signupByGoogle = async (req, res) => {
-  console.log('>>>>>> req.body => ', req.body);
   const { userType } = req.body;
   const { googleId, avatar } = req.body.signupData;
 
@@ -161,21 +197,45 @@ exports.signupByGoogle = async (req, res) => {
     return res.status(400).send(MESSAGE_USER_ALREADY_EXISTED);
   }
 
-  //  Insert a user into table "users"
-  newUser = await db.query(`
-    INSERT INTO users (google_id, id_status, email_verified, created_at)
-    VALUES('${googleId}', ${ID_OF_STATUS_APPROVED}, 1, '${currentDateTime}')
-  `);
-  userId = newUser.insertId;
-
   if (userType == 'individual') {
+    //  Insert a user into table "users"
+    newUser = await db.query(`
+      INSERT INTO users (
+        google_id, 
+        id_status, 
+        email_verified, 
+        id_user_type, 
+        created_at
+      ) VALUES(
+        '${googleId}', 
+        ${ID_OF_STATUS_APPROVED}, 
+        ${VALUE_OF_VERIFIED}, 
+        ${ID_OF_USER_TYPE_INDIVIDUAL}, 
+        '${currentDateTime}'
+      )
+    `);
+    userId = newUser.insertId;
+
     /* --------------------- If a user is individual ---------------------- */
     const { firstName, lastName } = req.body.signupData;
 
     //  Insert a user into table "individuals"
     newIndividual = await db.query(`
-      INSERT INTO individuals (first_name, last_name, id_user, avatar, phone_verified, created_at)
-      VALUES('${firstName}', '${lastName}', ${userId}, '${avatar}', 0, '${currentDateTime}')
+      INSERT INTO individuals (
+        first_name, 
+        last_name, 
+        id_user, 
+        avatar, 
+        phone_verified, 
+        created_at
+      ) VALUES(
+        '${firstName}', 
+        '${lastName}', 
+        ${userId}, 
+        '${avatar}', 
+        ${VALUE_OF_UNVERIFIED}, 
+        '${currentDateTime}'
+      )
     `);
     individualId = newIndividual.insertId;
 
@@ -218,6 +278,24 @@ exports.signupByGoogle = async (req, res) => {
       });
     /* -------------------------------------------------------------------- */
   } else {
+    //  Insert a user into table "users"
+    newUser = await db.query(`
+      INSERT INTO users (
+        google_id, 
+        id_status, 
+        email_verified, 
+        id_user_type, 
+        created_at
+      ) VALUES(
+        '${googleId}', 
+        ${ID_OF_STATUS_APPROVED}, 
+        ${VALUE_OF_VERIFIED}, 
+        ${ID_OF_USER_TYPE_COMPANY}, 
+        '${currentDateTime}'
+      )
+    `);
+    userId = newUser.insertId;
+
     /* ---------------------- If a user is a company ---------------------- */
     let newCompany = null;
     let companyId = 0;
