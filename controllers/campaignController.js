@@ -372,7 +372,7 @@ exports.createCommentOfCampaign = (req, res) => {
     };
     const userData = (await db.query(`SELECT id_user_type FROM users WHERE id = ${created_by};`))[0];
 
-    if (userData?.id_user_type == ID_OF_USER_TYPE_COMPANY) {
+    if (userData.id_user_type == ID_OF_USER_TYPE_COMPANY) {
       const { name, logo } = (await db.query(`
         SELECT name, logo FROM companies WHERE id_user = ${created_by};
       `))[0];
