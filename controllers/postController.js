@@ -1,7 +1,8 @@
 const {
   MESSAGE_SERVER_ERROR,
   ID_OF_STATUS_APPROVED,
-  ID_OF_USER_TYPE_INDIVIDUAL
+  ID_OF_USER_TYPE_INDIVIDUAL,
+  ID_OF_USER_TYPE_COMPANY
 } = require("../utils/constants");
 const db = require("../utils/db");
 const { getCurrentDateTime } = require("../utils/functions");
@@ -56,6 +57,29 @@ exports.getPostById = async (req, res) => {
         SELECT * FROM post_favorites WHERE id_post = ${post.id};
       `);
 
+      const commentsOfPost = await db.query(`
+        SELECT post_comments.*, uni.name AS creator_name, uni.image AS creator_image
+        FROM post_comments
+        LEFT JOIN (
+          SELECT 
+            users.id AS id_user,
+            IF(
+              users.id_user_type = 1, 
+              companies.name, 
+              CONCAT(individuals.first_name, " ", individuals.last_name)
+            ) AS "name",
+            IF(
+              users.id_user_type = 1, 
+              companies.logo, 
+              individuals.avatar
+            ) AS "image"
+          FROM users
+          LEFT JOIN companies ON users.id = companies.id_user
+          LEFT JOIN individuals ON users.id = individuals.id_user
+        ) AS uni ON post_comments.created_by = uni.id_user
+        WHERE post_comments.id_post = ${post.id};
+      `);
+
       if (post.tags) {
         post.tags = post.tags.split(',');
       } else {
@@ -85,7 +109,7 @@ exports.getPostById = async (req, res) => {
           name: `${individual.first_name} ${individual.last_name}`
         };
 
-        return res.status(200).send({ post, creatorOfPost, favoritesOfPost });
+        return res.status(200).send({ post, creatorOfPost, favoritesOfPost, commentsOfPost });
       } else {
         //  If the creator is a company
 
@@ -97,7 +121,7 @@ exports.getPostById = async (req, res) => {
           image: company.logo,
           name: company.name
         };
-        return res.status(200).send({ post, creatorOfPost, favoritesOfPost });
+        return res.status(200).send({ post, creatorOfPost, favoritesOfPost, commentsOfPost });
       }
     } else {
       throw new Error();
@@ -198,4 +222,53 @@ exports.handlePostFavorites = async (req, res) => {
     console.log('>>>>>>>>>> error of handlePostFavorites => ', error);
     return res.status(500).send(MESSAGE_SERVER_ERROR);
   }
+};
+
+/** Create a comment of post */
+exports.createCommentOfPost = (req, res) => {
+  const { content, id_post, created_by } = req.body;
+  const currentDateTime = getCurrentDateTime();
+
+  db.query(`
+    INSERT INTO post_comments (content, id_post, id_status, created_by, created_at)
+    VALUES (
+      "${String(content).replace(/"/g, '\'\'')}", 
+      ${id_post},
+      ${ID_OF_STATUS_APPROVED},
+      ${created_by},
+      "${currentDateTime}"
+    );
+  `).then(async (result) => {
+    const resData = {
+      id: result.insertId,
+      content,
+      id_post,
+      id_status: ID_OF_STATUS_APPROVED,
+      created_by,
+      created_at: currentDateTime,
+      updated_at: ''
+    };
+    const userData = (await db.query(`SELECT id_user_type FROM users WHERE id = ${created_by};`))[0];
+
+    if (userData?.id_user_type == ID_OF_USER_TYPE_COMPANY) {
+      const { name, logo } = (await db.query(`
+        SELECT name, logo FROM companies WHERE id_user = ${created_by};
+      `))[0];
+
+      resData.creator_name = name;
+      resData.creator_image = logo;
+    } else {
+      const { first_name, last_name, avatar } = (await db.query(`
+        SELECT first_name, last_name, avatar FROM individuals WHERE id_user = ${created_by};
+      `))[0];
+
+      resData.creator_name = `${first_name}, ${last_name}`;
+      resData.creator_image = avatar;
+    }
+    return res.status(201).send(resData);
+
+  }).catch(error => {
+    console.log('>>>>>>>>>>> error of createComment => ', error);
+    return res.status(500).send(MESSAGE_SERVER_ERROR);
+  });
 };
