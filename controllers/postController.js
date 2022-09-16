@@ -272,3 +272,11 @@ exports.createCommentOfPost = (req, res) => {
     return res.status(500).send(MESSAGE_SERVER_ERROR);
   });
 };
+
+/** Delete a comment of post */
+exports.deleteCommentOfPost = (req, res) => {
+  const { id } = req.params;
+  db.query(`DELETE FROM post_comments WHERE id = ${id};`)
+    .then(results => res.status(200).send())
+    .catch(error => res.status(500).send(MESSAGE_SERVER_ERROR));
+};

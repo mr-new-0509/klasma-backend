@@ -4,6 +4,7 @@ const {
   INIT_RAISED_PRICE,
   ID_OF_STATUS_COMPLETED,
   MESSAGE_INVEST_FINISHED,
+  ID_OF_USER_TYPE_COMPANY,
 } = require("../utils/constants");
 const db = require("../utils/db");
 const { getCurrentDateTime, convertTZ, getDateTimeString } = require("../utils/functions");
@@ -133,7 +134,32 @@ exports.getCampaignById = async (req, res) => {
       LEFT JOIN users ON investments.id_user = users.id
     `);
     /* -------------------------------------------------------- */
-    return res.status(200).send({ campaign, investments });
+
+    //  Get comments of campaign
+    const commentsOfCampaign = await db.query(`
+      SELECT campaign_comments.*, uni.name AS creator_name, uni.image AS creator_image
+      FROM campaign_comments
+      LEFT JOIN (
+        SELECT 
+          users.id AS id_user,
+          IF(
+            users.id_user_type = 1, 
+            companies.name, 
+            CONCAT(individuals.first_name, " ", individuals.last_name)
+          ) AS "name",
+          IF(
+            users.id_user_type = 1, 
+            companies.logo, 
+            individuals.avatar
+          ) AS "image"
+        FROM users
+        LEFT JOIN companies ON users.id = companies.id_user
+        LEFT JOIN individuals ON users.id = individuals.id_user
+      ) AS uni ON campaign_comments.created_by = uni.id_user
+      WHERE campaign_comments.id_campaign = ${id};
+    `);
+
+    return res.status(200).send({ campaign, investments, commentsOfCampaign });
   } catch (error) {
     return res.status(500).send(MESSAGE_SERVER_ERROR);
   }
@@ -317,5 +343,62 @@ exports.updateCampaignStatus = (req, res) => {
     WHERE id = ${id};
   `)
     .then(response => res.status(200).send(''))
+    .catch(error => res.status(500).send(MESSAGE_SERVER_ERROR));
+};
+
+/** Create a comment of campaign */
+exports.createCommentOfCampaign = (req, res) => {
+  const { content, id_campaign, created_by } = req.body;
+  const currentDateTime = getCurrentDateTime();
+
+  db.query(`
+    INSERT INTO campaign_comments (content, id_campaign, id_status, created_by, created_at)
+    VALUES (
+      "${String(content).replace(/"/g, '\'\'')}", 
+      ${id_campaign},
+      ${ID_OF_STATUS_APPROVED},
+      ${created_by},
+      "${currentDateTime}"
+    );
+  `).then(async (result) => {
+    const resData = {
+      id: result.insertId,
+      content,
+      id_campaign,
+      id_status: ID_OF_STATUS_APPROVED,
+      created_by,
+      created_at: currentDateTime,
+      updated_at: ''
+    };
+    const userData = (await db.query(`SELECT id_user_type FROM users WHERE id = ${created_by};`))[0];
+
+    if (userData?.id_user_type == ID_OF_USER_TYPE_COMPANY) {
+      const { name, logo } = (await db.query(`
+        SELECT name, logo FROM companies WHERE id_user = ${created_by};
+      `))[0];
+
+      resData.creator_name = name;
+      resData.creator_image = logo;
+    } else {
+      const { first_name, last_name, avatar } = (await db.query(`
+        SELECT first_name, last_name, avatar FROM individuals WHERE id_user = ${created_by};
+      `))[0];
+
+      resData.creator_name = `${first_name}, ${last_name}`;
+      resData.creator_image = avatar;
+    }
+    return res.status(201).send(resData);
+
+  }).catch(error => {
+    console.log('>>>>>>>>>>> error of createComment => ', error);
+    return res.status(500).send(MESSAGE_SERVER_ERROR);
+  });
+};
+
+/** Delete a comment of campaign */
+exports.deleteCommentOfCampaign = (req, res) => {
+  const { id } = req.params;
+  db.query(`DELETE FROM campaign_comments WHERE id = ${id};`)
+    .then(results => res.status(200).send())
     .catch(error => res.status(500).send(MESSAGE_SERVER_ERROR));
 };

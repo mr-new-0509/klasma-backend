@@ -7,7 +7,8 @@ const {
   updatePost,
   handlePostFavorites,
   getAllPosts,
-  createCommentOfPost
+  createCommentOfPost,
+  deleteCommentOfPost
 } = require('../controllers/postController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
@@ -18,5 +19,6 @@ router.get('/get-posts-by-user-id/:id', getPostsByUserId);
 router.get('/get-all', getAllPosts);
 router.post('/handle-post-favorite', authMiddleware, handlePostFavorites);
 router.post('/create-comment', authMiddleware, createCommentOfPost);
+router.delete('/delete-comment/:id', authMiddleware, deleteCommentOfPost);
 
 module.exports = router;
