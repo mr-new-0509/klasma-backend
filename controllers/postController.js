@@ -97,7 +97,7 @@ exports.getPostById = async (req, res) => {
         SELECT email, id_user_type FROM users WHERE id = ${post.created_by};
       `))[0];
 
-      if (user?.id_user_type === ID_OF_USER_TYPE_INDIVIDUAL) {
+      if (user.id_user_type === ID_OF_USER_TYPE_INDIVIDUAL) {
         //  If the creator is individual
 
         const individual = (await db.query(`
@@ -189,7 +189,7 @@ exports.handlePostFavorites = async (req, res) => {
     //  Check if the user is a creator of the post
     const post = (await db.query(`SELECT created_by FROM posts WHERE id = ${id_post};`))[0];
 
-    if (post?.created_by == id_user) {
+    if (post.created_by == id_user) {
       return res.status(403).send('');
     } else {
 
@@ -250,7 +250,7 @@ exports.createCommentOfPost = (req, res) => {
     };
     const userData = (await db.query(`SELECT id_user_type FROM users WHERE id = ${created_by};`))[0];
 
-    if (userData?.id_user_type == ID_OF_USER_TYPE_COMPANY) {
+    if (userData.id_user_type == ID_OF_USER_TYPE_COMPANY) {
       const { name, logo } = (await db.query(`
         SELECT name, logo FROM companies WHERE id_user = ${created_by};
       `))[0];
