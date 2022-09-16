@@ -146,7 +146,7 @@ exports.updatePost = async (req, res) => {
 /** Get all posts */
 exports.getAllPosts = (req, res) => {
   db.query(`
-    SELECT posts.*, COUNT(post_favorites.id_post) AS numberOfFavorites
+    SELECT posts.*, COUNT(post_favorites.id_post) AS number_of_favorites
     FROM posts
     LEFT JOIN post_favorites ON posts.id = post_favorites.id_post 
     GROUP BY posts.id;
@@ -161,11 +161,14 @@ exports.getAllPosts = (req, res) => {
 exports.handlePostFavorites = async (req, res) => {
   const { id_user, id_post } = req.body;
   try {
+
     //  Check if the user is a creator of the post
     const post = (await db.query(`SELECT created_by FROM posts WHERE id = ${id_post};`))[0];
+
     if (post?.created_by == id_user) {
       return res.status(403).send('');
     } else {
+
       //  Check whether the user already set favorite for the post
       const postFavorite = (await db.query(`
         SELECT * FROM post_favorites 
@@ -173,9 +176,11 @@ exports.handlePostFavorites = async (req, res) => {
       `))[0];
 
       if (postFavorite) {
+
         //  If yes, delete it.
         await db.query(`DELETE FROM post_favorites WHERE id = ${postFavorite.id};`);
       } else {
+
         //  If no, add it.
         await db.query(`
           INSERT INTO post_favorites (id_user, id_post)

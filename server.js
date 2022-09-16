@@ -31,6 +31,7 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/authRoute'));
 app.use('/api/campaign', require('./routes/campaignRoute'));
 app.use('/api/post', require('./routes/postRoute'));
+app.use('/api/comment', require('./routes/commentRoute'));
 app.use('/api/other', require('./routes/otherRoute'));
 
 if (process.env.NODE_ENV === 'production') {
