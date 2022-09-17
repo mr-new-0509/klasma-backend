@@ -6,6 +6,7 @@ const {
   MESSAGE_INVALID_CREDENTIALS,
   MESSAGE_SERVER_ERROR,
   MESSAGE_USER_NOT_REGISTERED,
+  MESSAGE_INCORRECT_CURRENT_PASSWORD,
   ID_OF_STATUS_APPROVED,
   ID_OF_USER_TYPE_INDIVIDUAL,
   ID_OF_USER_TYPE_COMPANY,
@@ -443,8 +444,6 @@ exports.updateUserProfile = async (req, res) => {
   } = req.body;
   let updatedUser = null;
 
-  console.log('>>>>>>> date_of_birth => ', date_of_birth);
-
   await db.query(`UPDATE users SET avatar = "${avatar}" WHERE id = ${id}`);
 
   if (company_name) {
@@ -558,5 +557,107 @@ exports.updateUserProfile = async (req, res) => {
         console.log('>>>>>>>>> error of updateUserProfile - company => ', error);
         return res.status(500).send(MESSAGE_SERVER_ERROR);
       });
+  }
+};
+
+/** Update a user's password */
+exports.updateUserPassword = async (req, res) => {
+  const { id } = req.params;
+  const { currentPassword, newPassword } = req.body;
+  let currentPasswordMatched = false;
+  let updatedUser = null;
+  let salt = null;
+  let encryptedPassword = null;
+  const userdata = (await db.query(`SELECT * FROM users WHERE id = ${id};`))[0];
+
+  try {
+    currentPasswordMatched = await bcrypt.compare(currentPassword, userdata.password);
+    if (!currentPasswordMatched) {
+      return res.status(400).send(MESSAGE_INCORRECT_CURRENT_PASSWORD);
+    }
+
+    //  Encrypt password
+    salt = await bcrypt.genSalt(10);
+    encryptedPassword = await bcrypt.hash(newPassword, salt);
+
+    await db.query(`UPDATE users SET password = "${encryptedPassword}" WHERE id = ${id};`);
+
+    if (userdata.id_user_type == ID_OF_USER_TYPE_COMPANY) {
+      //  Get updated userdata
+      updatedUser = (await db.query(`
+        SELECT 
+          companies.id AS id_company,
+          companies.name AS company_name,
+          companies.bio,
+          companies.site_url,
+          companies.country,
+          companies.state,
+          companies.city,
+          companies.postal_code,
+          companies.address,
+          companies.id_user,
+          users.email,
+          users.google_id,
+          users.email_verified,
+          users.avatar
+        FROM users 
+        LEFT JOIN companies ON companies.id_user = users.id
+        WHERE users.id = ${id};
+      `))[0];
+
+      //  Make access token of updated userdata
+      jwt.sign(
+        { ...updatedUser },
+        config.get('jwtSecret'),
+        { expiresIn: '5 days' },
+        (error, token) => {
+          if (error) {
+            console.log('# error => ', error);
+            return res.status(500).send(MESSAGE_SERVER_ERROR);
+          }
+          return res.status(201).send(token);
+        });
+    } else {
+      //  Get userdata
+      updatedUser = (await db.query(`
+        SELECT 
+          individuals.id AS id_individual,
+          individuals.first_name,
+          individuals.last_name,
+          individuals.bio,
+          individuals.date_of_birth,
+          individuals.country,
+          individuals.state,
+          individuals.city,
+          individuals.postal_code,
+          individuals.address,
+          individuals.phone,
+          individuals.phone_verified,
+          individuals.id_user,
+          users.email,
+          users.google_id,
+          users.email_verified,
+          users.avatar
+        FROM users 
+        LEFT JOIN individuals ON individuals.id_user = users.id
+        WHERE users.id = ${id}
+      `))[0];
+
+      //  Make access token of updated userdata
+      jwt.sign(
+        { ...updatedUser },
+        config.get('jwtSecret'),
+        { expiresIn: '5 days' },
+        (error, token) => {
+          if (error) {
+            console.log('# error => ', error);
+            return res.status(500).send(MESSAGE_SERVER_ERROR);
+          }
+          return res.status(201).send(token);
+        });
+    }
+  } catch (error) {
+    console.log('>>>>>>>>> error of updateUserPassword => ', error);
+    return res.status(500).send(MESSAGE_SERVER_ERROR);
   }
 };
