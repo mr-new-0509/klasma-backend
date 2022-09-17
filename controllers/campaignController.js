@@ -137,21 +137,17 @@ exports.getCampaignById = async (req, res) => {
 
     //  Get comments of campaign
     const commentsOfCampaign = await db.query(`
-      SELECT campaign_comments.*, uni.name AS creator_name, uni.image AS creator_image
+      SELECT campaign_comments.*, uni.name AS creator_name, uni.avatar AS creator_avatar
       FROM campaign_comments
       LEFT JOIN (
         SELECT 
           users.id AS id_user,
+          users.avatar,
           IF(
             users.id_user_type = 1, 
             companies.name, 
             CONCAT(individuals.first_name, " ", individuals.last_name)
-          ) AS "name",
-          IF(
-            users.id_user_type = 1, 
-            companies.logo, 
-            individuals.avatar
-          ) AS "image"
+          ) AS "name"
         FROM users
         LEFT JOIN companies ON users.id = companies.id_user
         LEFT JOIN individuals ON users.id = individuals.id_user
@@ -370,22 +366,22 @@ exports.createCommentOfCampaign = (req, res) => {
       created_at: currentDateTime,
       updated_at: ''
     };
-    const userData = (await db.query(`SELECT id_user_type FROM users WHERE id = ${created_by};`))[0];
+    const userData = (await db.query(`SELECT id_user_type, avatar FROM users WHERE id = ${created_by};`))[0];
 
     if (userData.id_user_type == ID_OF_USER_TYPE_COMPANY) {
-      const { name, logo } = (await db.query(`
-        SELECT name, logo FROM companies WHERE id_user = ${created_by};
+      const { name } = (await db.query(`
+        SELECT name FROM companies WHERE id_user = ${created_by};
       `))[0];
 
       resData.creator_name = name;
-      resData.creator_image = logo;
+      resData.creator_image = userData.avatar;
     } else {
-      const { first_name, last_name, avatar } = (await db.query(`
-        SELECT first_name, last_name, avatar FROM individuals WHERE id_user = ${created_by};
+      const { first_name, last_name } = (await db.query(`
+        SELECT first_name, last_name FROM individuals WHERE id_user = ${created_by};
       `))[0];
 
       resData.creator_name = `${first_name}, ${last_name}`;
-      resData.creator_image = avatar;
+      resData.creator_image = userData.avatar;
     }
     return res.status(201).send(resData);
 
