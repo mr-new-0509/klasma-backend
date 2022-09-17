@@ -13,7 +13,7 @@ const {
   VALUE_OF_VERIFIED
 } = require("../utils/constants");
 const db = require("../utils/db");
-const { getCurrentDateTime } = require('../utils/functions');
+const { getCurrentDateTime, getDateTimeString } = require('../utils/functions');
 
 /** Sign up by email */
 exports.signupByEmail = async (req, res) => {
@@ -422,4 +422,141 @@ exports.signinByEmail = async (req, res) => {
     console.log('# token => ', token);
     return res.status(200).send(token);
   });
+};
+
+/** Update a user's profile */
+exports.updateUserProfile = async (req, res) => {
+  const { id } = req.params;
+  const {
+    avatar,
+    company_name,
+    first_name,
+    last_name,
+    bio,
+    phone,
+    date_of_birth,
+    country,
+    state,
+    city,
+    address,
+    postal_code
+  } = req.body;
+  let updatedUser = null;
+
+  console.log('>>>>>>> date_of_birth => ', date_of_birth);
+
+  await db.query(`UPDATE users SET avatar = "${avatar}" WHERE id = ${id}`);
+
+  if (company_name) {
+    await db.query(`
+      UPDATE companies
+      SET 
+        company_name = "${String(company_name).replace(/"/g, '\'\'')}",
+        bio = "${String(bio).replace(/"/g, '\'\'')}",
+        phone = "${phone}",
+        date_of_birth = "${date_of_birth}",
+        country = "${String(country).replace(/"/g, '\'\'')}",
+        state = "${String(state).replace(/"/g, '\'\'')}",
+        city = "${String(city).replace(/"/g, '\'\'')}",
+        address = "${String(address).replace(/"/g, '\'\'')}",
+        postal_code = "${String(postal_code).replace(/"/g, '\'\'')}"
+      WHERE id_user = ${id};
+    `).then(async () => {
+      //  Get updated userdata
+      updatedUser = (await db.query(`
+        SELECT 
+          companies.id AS id_company,
+          companies.name AS company_name,
+          companies.bio,
+          companies.site_url,
+          companies.country,
+          companies.state,
+          companies.city,
+          companies.postal_code,
+          companies.address,
+          companies.id_user,
+          users.email,
+          users.google_id,
+          users.email_verified,
+          users.avatar
+        FROM users 
+        LEFT JOIN companies ON companies.id_user = users.id
+        WHERE users.id = ${id};
+      `))[0];
+
+      //  Make access token of updated userdata
+      jwt.sign(
+        { ...updatedUser },
+        config.get('jwtSecret'),
+        { expiresIn: '5 days' },
+        (error, token) => {
+          if (error) {
+            console.log('# error => ', error);
+            return res.status(500).send(MESSAGE_SERVER_ERROR);
+          }
+          return res.status(201).send(token);
+        });
+    }).catch(error => {
+      console.log('>>>>>>>>> error of updateUserProfile - company => ', error);
+      return res.status(500).send(MESSAGE_SERVER_ERROR);
+    });
+  } else {
+    await db.query(`
+      UPDATE individuals
+      SET 
+        first_name = "${String(first_name).replace(/"/g, '\'\'')}",
+        last_name = "${String(last_name).replace(/"/g, '\'\'')}",
+        bio = "${String(bio).replace(/"/g, '\'\'')}",
+        phone = "${phone}",
+        date_of_birth = "${date_of_birth}",
+        country = "${String(country).replace(/"/g, '\'\'')}",
+        state = "${String(state).replace(/"/g, '\'\'')}",
+        city = "${String(city).replace(/"/g, '\'\'')}",
+        address = "${String(address).replace(/"/g, '\'\'')}",
+        postal_code = "${String(postal_code).replace(/"/g, '\'\'')}"
+      WHERE id_user = ${id};
+    `).then(async () => {
+      //  Get userdata
+      updatedUser = (await db.query(`
+        SELECT 
+          individuals.id AS id_individual,
+          individuals.first_name,
+          individuals.last_name,
+          individuals.bio,
+          individuals.date_of_birth,
+          individuals.country,
+          individuals.state,
+          individuals.city,
+          individuals.postal_code,
+          individuals.address,
+          individuals.phone,
+          individuals.phone_verified,
+          individuals.id_user,
+          users.email,
+          users.google_id,
+          users.email_verified,
+          users.avatar
+        FROM users 
+        LEFT JOIN individuals ON individuals.id_user = users.id
+        WHERE users.id = ${id}
+      `))[0];
+
+      //  Make access token of updated userdata
+      jwt.sign(
+        { ...updatedUser },
+        config.get('jwtSecret'),
+        { expiresIn: '5 days' },
+        (error, token) => {
+          if (error) {
+            console.log('# error => ', error);
+            return res.status(500).send(MESSAGE_SERVER_ERROR);
+          }
+          return res.status(201).send(token);
+        });
+    })
+      .catch(error => {
+        console.log('>>>>>>>>> error of updateUserProfile - company => ', error);
+        return res.status(500).send(MESSAGE_SERVER_ERROR);
+      });
+  }
 };
