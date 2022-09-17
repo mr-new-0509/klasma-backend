@@ -29,7 +29,7 @@ exports.signupByEmail = async (req, res) => {
   let currentDateTime = getCurrentDateTime();
 
   //  Check whether a user already existed or not
-  user = await (await db.query(`SELECT * FROM users WHERE email = '${email}'`))[0];
+  user = await (await db.query(`SELECT * FROM users WHERE email = "${email}"`))[0];
   if (user) {
     return res.status(400).send(MESSAGE_USER_ALREADY_EXISTED);
   }
@@ -49,12 +49,12 @@ exports.signupByEmail = async (req, res) => {
         id_user_type, 
         created_at
       ) VALUES(
-        '${email}', 
-        '${encryptedPassword}', 
+        "${email}", 
+        "${encryptedPassword}", 
         ${ID_OF_STATUS_APPROVED}, 
         ${VALUE_OF_UNVERIFIED}, 
         ${ID_OF_USER_TYPE_INDIVIDUAL}, 
-        '${currentDateTime}'
+        "${currentDateTime}"
       );
     `);
     userId = newUser.insertId;
@@ -67,7 +67,7 @@ exports.signupByEmail = async (req, res) => {
     //  Insert a user into table "individuals"
     newIndividual = await db.query(`
       INSERT INTO individuals (first_name, last_name, id_user, phone_verified, created_at)
-      VALUES('${firstName}', '${lastName}', ${userId}, ${VALUE_OF_UNVERIFIED}, '${currentDateTime}');
+      VALUES("${firstName}", "${lastName}", ${userId}, ${VALUE_OF_UNVERIFIED}, "${currentDateTime}");
     `);
     individualId = newIndividual.insertId;
 
@@ -85,12 +85,12 @@ exports.signupByEmail = async (req, res) => {
         individuals.postal_code,
         individuals.address,
         individuals.phone,
-        individuals.avatar,
         individuals.phone_verified,
         individuals.id_user,
         users.email,
         users.google_id,
-        users.email_verified
+        users.email_verified,
+        users.avatar
       FROM individuals 
       LEFT JOIN users ON individuals.id_user = users.id
       WHERE individuals.id = ${individualId}
@@ -120,12 +120,12 @@ exports.signupByEmail = async (req, res) => {
         id_user_type, 
         created_at
       ) VALUES(
-        '${email}', 
-        '${encryptedPassword}', 
+        "${email}", 
+        "${encryptedPassword}", 
         ${ID_OF_STATUS_APPROVED}, 
         ${VALUE_OF_UNVERIFIED}, 
         ${ID_OF_USER_TYPE_COMPANY}, 
-        '${currentDateTime}'
+        "${currentDateTime}"
       );
     `);
     userId = newUser.insertId;
@@ -138,7 +138,7 @@ exports.signupByEmail = async (req, res) => {
     //  Insert a user into table "individuals"
     newCompany = await db.query(`
       INSERT INTO companies (name, id_user, created_at)
-      VALUES('${companyName}', ${userId}, '${currentDateTime}')
+      VALUES("${companyName}", ${userId}, "${currentDateTime}")
     `);
     companyId = newCompany.insertId;
 
@@ -148,7 +148,6 @@ exports.signupByEmail = async (req, res) => {
         companies.id AS id_company,
         companies.name AS company_name,
         companies.bio,
-        companies.logo,
         companies.site_url,
         companies.country,
         companies.state,
@@ -158,7 +157,8 @@ exports.signupByEmail = async (req, res) => {
         companies.id_user,
         users.email,
         users.google_id,
-        users.email_verified
+        users.email_verified,
+        users.avatar
       FROM companies 
       LEFT JOIN users ON companies.id_user = users.id
       WHERE companies.id = ${companyId};
@@ -192,7 +192,7 @@ exports.signupByGoogle = async (req, res) => {
   let currentDateTime = getCurrentDateTime();
 
   //  Check whether a user already existed or not
-  user = await (await db.query(`SELECT * FROM users WHERE google_id = '${googleId}';`))[0];
+  user = await (await db.query(`SELECT * FROM users WHERE google_id = "${googleId}";`))[0];
   if (user) {
     return res.status(400).send(MESSAGE_USER_ALREADY_EXISTED);
   }
@@ -205,13 +205,15 @@ exports.signupByGoogle = async (req, res) => {
         id_status, 
         email_verified, 
         id_user_type, 
+        avatar,
         created_at
       ) VALUES(
-        '${googleId}', 
+        "${googleId}", 
         ${ID_OF_STATUS_APPROVED}, 
         ${VALUE_OF_VERIFIED}, 
         ${ID_OF_USER_TYPE_INDIVIDUAL}, 
-        '${currentDateTime}'
+        "${avatar}"
+        "${currentDateTime}"
       );
     `);
     userId = newUser.insertId;
@@ -225,16 +227,14 @@ exports.signupByGoogle = async (req, res) => {
         first_name, 
         last_name, 
         id_user, 
-        avatar, 
         phone_verified, 
         created_at
       ) VALUES(
-        '${firstName}', 
-        '${lastName}', 
+        "${firstName}", 
+        "${lastName}", 
         ${userId}, 
-        '${avatar}', 
         ${VALUE_OF_UNVERIFIED}, 
-        '${currentDateTime}'
+        "${currentDateTime}"
       );
     `);
     individualId = newIndividual.insertId;
@@ -253,12 +253,12 @@ exports.signupByGoogle = async (req, res) => {
         individuals.postal_code,
         individuals.address,
         individuals.phone,
-        individuals.avatar,
         individuals.phone_verified,
         individuals.id_user,
         users.email,
         users.google_id,
-        users.email_verified
+        users.email_verified,
+        users.avatar
       FROM individuals 
       LEFT JOIN users ON individuals.id_user = users.id
       WHERE individuals.id = ${individualId};
@@ -285,13 +285,15 @@ exports.signupByGoogle = async (req, res) => {
         id_status, 
         email_verified, 
         id_user_type, 
+        avatar,
         created_at
       ) VALUES(
-        '${googleId}', 
+        "${googleId}", 
         ${ID_OF_STATUS_APPROVED}, 
         ${VALUE_OF_VERIFIED}, 
         ${ID_OF_USER_TYPE_COMPANY}, 
-        '${currentDateTime}'
+        "${avatar}"
+        "${currentDateTime}"
       );
     `);
     userId = newUser.insertId;
@@ -303,7 +305,7 @@ exports.signupByGoogle = async (req, res) => {
     //  Insert a user into table "individuals"
     newCompany = await db.query(`
       INSERT INTO companies (id_user, created_at)
-      VALUES(${userId}, '${currentDateTime}')
+      VALUES(${userId}, "${currentDateTime}")
     `);
     companyId = newCompany.insertId;
 
@@ -313,7 +315,6 @@ exports.signupByGoogle = async (req, res) => {
         companies.id AS id_company,
         companies.name AS company_name,
         companies.bio,
-        companies.logo,
         companies.site_url,
         companies.country,
         companies.state,
@@ -323,7 +324,8 @@ exports.signupByGoogle = async (req, res) => {
         companies.id_user,
         users.email,
         users.google_id,
-        users.email_verified
+        users.email_verified,
+        users.avatar
       FROM companies 
       LEFT JOIN users ON companies.id_user = users.id
       WHERE companies.id = ${companyId};
@@ -366,16 +368,16 @@ exports.signinByEmail = async (req, res) => {
         individuals.postal_code,
         individuals.address,
         individuals.phone,
-        individuals.avatar,
         individuals.phone_verified,
         individuals.id_user,
         users.email,
         users.google_id,
         users.email_verified,
-        users.password
+        users.password,
+        users.avatar
       FROM individuals 
       LEFT JOIN users ON individuals.id_user = users.id
-      WHERE users.email = '${email}' AND users.id_status = ${ID_OF_STATUS_APPROVED};
+      WHERE users.email = "${email}" AND users.id_status = ${ID_OF_STATUS_APPROVED};
     `))[0];
   } else {
     userdata = await (await db.query(`
@@ -383,7 +385,6 @@ exports.signinByEmail = async (req, res) => {
         companies.id AS id_company,
         companies.name AS company_name,
         companies.bio,
-        companies.logo,
         companies.site_url,
         companies.country,
         companies.state,
@@ -394,10 +395,11 @@ exports.signinByEmail = async (req, res) => {
         users.email,
         users.google_id,
         users.email_verified,
-        users.password
+        users.password,
+        users.avatar
       FROM companies 
       LEFT JOIN users ON companies.id_user = users.id
-      WHERE users.email = '${email}' AND users.id_status = ${ID_OF_STATUS_APPROVED};
+      WHERE users.email = "${email}" AND users.id_status = ${ID_OF_STATUS_APPROVED};
     `))[0];
   }
 
