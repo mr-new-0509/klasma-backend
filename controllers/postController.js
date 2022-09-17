@@ -68,7 +68,7 @@ exports.getPostById = async (req, res) => {
               users.id_user_type = 1, 
               companies.name, 
               CONCAT(individuals.first_name, " ", individuals.last_name)
-            ) AS "name",
+            ) AS "name"
           FROM users
           LEFT JOIN companies ON users.id = companies.id_user
           LEFT JOIN individuals ON users.id = individuals.id_user
