@@ -58,21 +58,17 @@ exports.getPostById = async (req, res) => {
       `);
 
       const commentsOfPost = await db.query(`
-        SELECT post_comments.*, uni.name AS creator_name, uni.image AS creator_image
+        SELECT post_comments.*, uni.name AS creator_name, uni.avatar AS creator_avatar
         FROM post_comments
         LEFT JOIN (
           SELECT 
             users.id AS id_user,
+            users.avatar,
             IF(
               users.id_user_type = 1, 
               companies.name, 
               CONCAT(individuals.first_name, " ", individuals.last_name)
             ) AS "name",
-            IF(
-              users.id_user_type = 1, 
-              companies.logo, 
-              individuals.avatar
-            ) AS "image"
           FROM users
           LEFT JOIN companies ON users.id = companies.id_user
           LEFT JOIN individuals ON users.id = individuals.id_user
@@ -94,18 +90,18 @@ exports.getPostById = async (req, res) => {
 
       //  Get the user info of creator
       const user = (await db.query(`
-        SELECT email, id_user_type FROM users WHERE id = ${post.created_by};
+        SELECT email, id_user_type, avatar FROM users WHERE id = ${post.created_by};
       `))[0];
 
       if (user.id_user_type === ID_OF_USER_TYPE_INDIVIDUAL) {
         //  If the creator is individual
 
         const individual = (await db.query(`
-          SELECT id AS id_individual, first_name, last_name, avatar
+          SELECT id AS id_individual, first_name, last_name
           FROM individuals WHERE id_user = ${post.created_by};
         `))[0];
         const creatorOfPost = {
-          image: individual.avatar,
+          avatar: user.avatar,
           name: `${individual.first_name} ${individual.last_name}`
         };
 
@@ -114,11 +110,11 @@ exports.getPostById = async (req, res) => {
         //  If the creator is a company
 
         const company = (await db.query(`
-          SELECT id AS id_company, name, logo
+          SELECT id AS id_company, name
           FROM companies WHERE id_user = ${post.created_by};
         `))[0];
         const creatorOfPost = {
-          image: company.logo,
+          avatar: user.avatar,
           name: company.name
         };
         return res.status(200).send({ post, creatorOfPost, favoritesOfPost, commentsOfPost });
@@ -248,22 +244,24 @@ exports.createCommentOfPost = (req, res) => {
       created_at: currentDateTime,
       updated_at: ''
     };
-    const userData = (await db.query(`SELECT id_user_type FROM users WHERE id = ${created_by};`))[0];
+    const userData = (await db.query(`
+      SELECT id_user_type, avatar FROM users WHERE id = ${created_by};
+    `))[0];
 
     if (userData.id_user_type == ID_OF_USER_TYPE_COMPANY) {
-      const { name, logo } = (await db.query(`
-        SELECT name, logo FROM companies WHERE id_user = ${created_by};
+      const { name } = (await db.query(`
+        SELECT name FROM companies WHERE id_user = ${created_by};
       `))[0];
 
       resData.creator_name = name;
-      resData.creator_image = logo;
+      resData.creator_avatar = userData.avatar;
     } else {
-      const { first_name, last_name, avatar } = (await db.query(`
-        SELECT first_name, last_name, avatar FROM individuals WHERE id_user = ${created_by};
+      const { first_name, last_name } = (await db.query(`
+        SELECT first_name, last_name FROM individuals WHERE id_user = ${created_by};
       `))[0];
 
       resData.creator_name = `${first_name}, ${last_name}`;
-      resData.creator_image = avatar;
+      resData.creator_avatar = userData.avatar;
     }
     return res.status(201).send(resData);
 
