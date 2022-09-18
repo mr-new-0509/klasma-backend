@@ -522,8 +522,11 @@ exports.updateUserProfile = async (req, res) => {
     postal_code
   } = req.body;
   let updatedUser = null;
+  const currentDateTime = getCurrentDateTime();
 
-  await db.query(`UPDATE users SET avatar = "${avatar}" WHERE id = ${id}`);
+  await db.query(`
+    UPDATE users SET avatar = "${avatar}", updated_at = "${currentDateTime}" WHERE id = ${id};
+  `);
 
   if (company_name) {
     await db.query(`
@@ -537,7 +540,8 @@ exports.updateUserProfile = async (req, res) => {
         state = "${String(state).replace(/"/g, '\'\'')}",
         city = "${String(city).replace(/"/g, '\'\'')}",
         address = "${String(address).replace(/"/g, '\'\'')}",
-        postal_code = "${String(postal_code).replace(/"/g, '\'\'')}"
+        postal_code = "${String(postal_code).replace(/"/g, '\'\'')}",
+        updated_at = "${currentDateTime}"
       WHERE id_user = ${id};
     `).then(async () => {
       //  Get updated userdata
@@ -591,7 +595,8 @@ exports.updateUserProfile = async (req, res) => {
         state = "${String(state).replace(/"/g, '\'\'')}",
         city = "${String(city).replace(/"/g, '\'\'')}",
         address = "${String(address).replace(/"/g, '\'\'')}",
-        postal_code = "${String(postal_code).replace(/"/g, '\'\'')}"
+        postal_code = "${String(postal_code).replace(/"/g, '\'\'')}",
+        updated_at = "${currentDateTime}"
       WHERE id_user = ${id};
     `).then(async () => {
       //  Get userdata
@@ -648,6 +653,7 @@ exports.updateUserPassword = async (req, res) => {
   let salt = null;
   let encryptedPassword = null;
   const userdata = (await db.query(`SELECT * FROM users WHERE id = ${id};`))[0];
+  const currentDateTime = getCurrentDateTime();
 
   try {
     currentPasswordMatched = await bcrypt.compare(currentPassword, userdata.password);
@@ -659,7 +665,11 @@ exports.updateUserPassword = async (req, res) => {
     salt = await bcrypt.genSalt(10);
     encryptedPassword = await bcrypt.hash(newPassword, salt);
 
-    await db.query(`UPDATE users SET password = "${encryptedPassword}" WHERE id = ${id};`);
+    await db.query(`
+      UPDATE users 
+      SET password = "${encryptedPassword}", updated_at = "${currentDateTime}" 
+      WHERE id = ${id};
+    `);
 
     if (userdata.id_user_type == ID_OF_USER_TYPE_COMPANY) {
       //  Get updated userdata
@@ -784,7 +794,7 @@ exports.resendEmailVerificationLink = async (req, res) => {
 /** Verify email */
 exports.verifyEmail = async (req, res) => {
   const { verificationToken } = req.params;
-
+  const currentDateTime = getCurrentDateTime();
   let userdata = null;
 
   jwt.verify(verificationToken, config.get('jwtSecret'), async (error, user) => {
@@ -816,7 +826,9 @@ exports.verifyEmail = async (req, res) => {
 
       if (user) {
         await db.query(`
-          UPDATE users SET email_verified = ${VALUE_OF_VERIFIED} WHERE id = ${user.id};
+          UPDATE users 
+          SET email_verified = ${VALUE_OF_VERIFIED}, updated_at = "${currentDateTime}"
+          WHERE id = ${user.id};
         `);
         userdata.email_verified = VALUE_OF_VERIFIED;
         jwt.sign(
@@ -861,7 +873,9 @@ exports.verifyEmail = async (req, res) => {
 
       if (user) {
         await db.query(`
-          UPDATE users SET email_verified = ${VALUE_OF_VERIFIED} WHERE id = ${user.id};
+          UPDATE users 
+          SET email_verified = ${VALUE_OF_VERIFIED}, updated_at = "${currentDateTime}"
+          WHERE id = ${user.id};
         `);
         userdata.email_verified = VALUE_OF_VERIFIED;
         jwt.sign(

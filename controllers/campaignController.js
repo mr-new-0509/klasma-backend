@@ -287,7 +287,7 @@ exports.invest = async (req, res) => {
       const updatedRaisedPrice = campaign.raised_price + price;
 
       //  Update the raised price.
-      let toUpdateFieldsOfCampaigns = `raised_price = ${updatedRaisedPrice}`;
+      let toUpdateFieldsOfCampaigns = `raised_price = ${updatedRaisedPrice}, updated_at = "${currentDateTime}"`;
 
       //  If the raised price is reached or over the goal one, update the status of campaign.
       if (updatedRaisedPrice >= campaign.goal_price) {
@@ -295,7 +295,7 @@ exports.invest = async (req, res) => {
       }
 
       await db.query(`
-        UPDATE campaigns SET ${toUpdateFieldsOfCampaigns} WHERE id = ${id_campaign}
+        UPDATE campaigns SET ${toUpdateFieldsOfCampaigns} WHERE id = ${id_campaign};
       `);
       /* --------------------------------------------------------------- */
 
