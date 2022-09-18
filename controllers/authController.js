@@ -97,7 +97,9 @@ exports.signupByEmail = async (req, res) => {
         users.email,
         users.google_id,
         users.email_verified,
-        users.avatar
+        users.avatar,
+        users.wallet_address,
+        users.id_user_type
       FROM individuals 
       LEFT JOIN users ON individuals.id_user = users.id
       WHERE individuals.id = ${individualId}
@@ -202,7 +204,9 @@ exports.signupByEmail = async (req, res) => {
         users.email,
         users.google_id,
         users.email_verified,
-        users.avatar
+        users.avatar,
+        users.wallet_address,
+        users.id_user_type
       FROM companies 
       LEFT JOIN users ON companies.id_user = users.id
       WHERE companies.id = ${companyId};
@@ -338,7 +342,9 @@ exports.signupByGoogle = async (req, res) => {
         users.email,
         users.google_id,
         users.email_verified,
-        users.avatar
+        users.avatar,
+        users.wallet_address,
+        users.id_user_type
       FROM individuals 
       LEFT JOIN users ON individuals.id_user = users.id
       WHERE individuals.id = ${individualId};
@@ -405,7 +411,9 @@ exports.signupByGoogle = async (req, res) => {
         users.email,
         users.google_id,
         users.email_verified,
-        users.avatar
+        users.avatar,
+        users.wallet_address,
+        users.id_user_type
       FROM companies 
       LEFT JOIN users ON companies.id_user = users.id
       WHERE companies.id = ${companyId};
@@ -454,7 +462,9 @@ exports.signinByEmail = async (req, res) => {
         users.google_id,
         users.email_verified,
         users.password,
-        users.avatar
+        users.avatar,
+        users.wallet_address,
+        users.id_user_type
       FROM individuals 
       LEFT JOIN users ON individuals.id_user = users.id
       WHERE users.email = "${email}" AND users.id_status = ${ID_OF_STATUS_APPROVED};
@@ -476,7 +486,9 @@ exports.signinByEmail = async (req, res) => {
         users.google_id,
         users.email_verified,
         users.password,
-        users.avatar
+        users.avatar,
+        users.wallet_address,
+        users.id_user_type
       FROM companies 
       LEFT JOIN users ON companies.id_user = users.id
       WHERE users.email = "${email}" AND users.id_status = ${ID_OF_STATUS_APPROVED};
@@ -560,7 +572,9 @@ exports.updateUserProfile = async (req, res) => {
           users.email,
           users.google_id,
           users.email_verified,
-          users.avatar
+          users.avatar,
+          users.wallet_address,
+          users.id_user_type
         FROM users 
         LEFT JOIN companies ON companies.id_user = users.id
         WHERE users.id = ${id};
@@ -618,7 +632,9 @@ exports.updateUserProfile = async (req, res) => {
           users.email,
           users.google_id,
           users.email_verified,
-          users.avatar
+          users.avatar,
+          users.wallet_address,
+          users.id_user_type
         FROM users 
         LEFT JOIN individuals ON individuals.id_user = users.id
         WHERE users.id = ${id}
@@ -688,7 +704,9 @@ exports.updateUserPassword = async (req, res) => {
           users.email,
           users.google_id,
           users.email_verified,
-          users.avatar
+          users.avatar,
+          users.wallet_address,
+          users.id_user_type
         FROM users 
         LEFT JOIN companies ON companies.id_user = users.id
         WHERE users.id = ${id};
@@ -726,7 +744,9 @@ exports.updateUserPassword = async (req, res) => {
           users.email,
           users.google_id,
           users.email_verified,
-          users.avatar
+          users.avatar,
+          users.wallet_address,
+          users.id_user_type
         FROM users 
         LEFT JOIN individuals ON individuals.id_user = users.id
         WHERE users.id = ${id}
@@ -818,7 +838,9 @@ exports.verifyEmail = async (req, res) => {
           users.email,
           users.google_id,
           users.email_verified,
-          users.avatar
+          users.avatar,
+          users.wallet_address,
+          users.id_user_type
         FROM companies 
         LEFT JOIN users ON companies.id_user = users.id
         WHERE users.id = ${user.id};
@@ -865,7 +887,9 @@ exports.verifyEmail = async (req, res) => {
           users.email,
           users.google_id,
           users.email_verified,
-          users.avatar
+          users.avatar,
+          users.wallet_address,
+          users.id_user_type
         FROM individuals 
         LEFT JOIN users ON individuals.id_user = users.id
         WHERE users.id = ${user.id};
@@ -895,4 +919,94 @@ exports.verifyEmail = async (req, res) => {
       }
     }
   });
+};
+
+exports.updateWalletAddress = async (req, res) => {
+  const { id } = req.params;
+  const { wallet_address, id_user_type } = req.body;
+  let userdata = null;
+
+  try {
+    await db.query(`
+      UPDATE users SET wallet_address = "${wallet_address}" WHERE id = ${id};
+    `);
+
+    if (id_user_type == ID_OF_USER_TYPE_COMPANY) {
+      userdata = (await db.query(`
+        SELECT 
+          companies.id AS id_company,
+          companies.name AS company_name,
+          companies.bio,
+          companies.site_url,
+          companies.country,
+          companies.state,
+          companies.city,
+          companies.postal_code,
+          companies.address,
+          companies.id_user,
+          users.email,
+          users.google_id,
+          users.email_verified,
+          users.avatar,
+          users.wallet_address,
+          users.id_user_type
+        FROM companies 
+        LEFT JOIN users ON companies.id_user = users.id
+        WHERE users.id = ${id};
+      `))[0];
+      jwt.sign(
+        { ...userdata },
+        config.get('jwtSecret'),
+        { expiresIn: '5 days' },
+        (error, token) => {
+          if (error) {
+            console.log('# error => ', error);
+            return res.status(500).send(MESSAGE_SERVER_ERROR);
+          }
+          console.log('# token => ', token);
+          return res.status(200).send(token);
+        });
+    } else {
+      userdata = (await db.query(`
+        SELECT 
+          individuals.id AS id_individual,
+          individuals.first_name,
+          individuals.last_name,
+          individuals.bio,
+          individuals.date_of_birth,
+          individuals.country,
+          individuals.state,
+          individuals.city,
+          individuals.postal_code,
+          individuals.address,
+          individuals.phone,
+          individuals.phone_verified,
+          individuals.id_user,
+          users.email,
+          users.google_id,
+          users.email_verified,
+          users.avatar,
+          users.wallet_address,
+          users.id_user_type
+        FROM individuals 
+        LEFT JOIN users ON individuals.id_user = users.id
+        WHERE users.id = ${id};
+      `))[0];
+      jwt.sign(
+        { ...userdata },
+        config.get('jwtSecret'),
+        { expiresIn: '5 days' },
+        (error, token) => {
+          if (error) {
+            console.log('# error => ', error);
+            return res.status(500).send(MESSAGE_SERVER_ERROR);
+          }
+          console.log('# token => ', token);
+          return res.status(200).send(token);
+        });
+    }
+  } catch (error) {
+    console.log('>>>>>>>> error of updateWalletAddress => ', error);
+    return res.status(500).send(MESSAGE_SERVER_ERROR);
+  }
 };

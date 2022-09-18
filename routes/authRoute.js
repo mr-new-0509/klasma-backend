@@ -7,7 +7,8 @@ const {
   updateUserProfile,
   updateUserPassword,
   resendEmailVerificationLink,
-  verifyEmail
+  verifyEmail,
+  updateWalletAddress
 } = require('../controllers/authController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
@@ -18,5 +19,6 @@ router.put('/update-user-profile/:id', authMiddleware, updateUserProfile);
 router.put('/update-user-password/:id', authMiddleware, updateUserPassword);
 router.get('/resend-email-verification-link/:id', authMiddleware, resendEmailVerificationLink);
 router.put('/email-verify/:verificationToken', verifyEmail);
+router.put('/update-wallet-address/:id', authMiddleware, updateWalletAddress);
 
 module.exports = router;
