@@ -11,10 +11,16 @@ const {
   ID_OF_USER_TYPE_INDIVIDUAL,
   ID_OF_USER_TYPE_COMPANY,
   VALUE_OF_UNVERIFIED,
-  VALUE_OF_VERIFIED
+  VALUE_OF_VERIFIED,
+  SITE_BASIC_URL,
+  COMPANY_EMAIL,
+  MESSAGE_EMAIL_SENT_SUCCESS,
+  MESSAGE_EMAIL_SENT_FAILED,
+  MESSAGE_EMAIL_VERIFY_FAILED
 } = require("../utils/constants");
 const db = require("../utils/db");
 const { getCurrentDateTime, getDateTimeString } = require('../utils/functions');
+const Sib = require('../utils/Sib');
 
 /** Sign up by email */
 exports.signupByEmail = async (req, res) => {
@@ -73,7 +79,7 @@ exports.signupByEmail = async (req, res) => {
     individualId = newIndividual.insertId;
 
     //  Get userdata
-    userdata = await (await db.query(`
+    userdata = (await db.query(`
       SELECT 
         individuals.id AS id_individual,
         individuals.first_name,
@@ -102,12 +108,49 @@ exports.signupByEmail = async (req, res) => {
       { ...userdata },
       config.get('jwtSecret'),
       { expiresIn: '5 days' },
-      (error, token) => {
+      async (error, token) => {
         if (error) {
           console.log('# error => ', error);
           return res.status(500).send(MESSAGE_SERVER_ERROR);
         }
-        return res.status(201).send(token);
+
+        /* ------------------- Send email verification link ------------------ */
+        const user = (await db.query(`SELECT * FROM users WHERE id = ${userId};`))[0];
+        jwt.sign(
+          { ...user },
+          config.get('jwtSecret'),
+          { expiresIn: "2h" },
+          (error, tokenToVerify) => {
+            if (error) {
+              console.log('# error => ', error);
+              return res.status(500).send(MESSAGE_500);
+            }
+
+            const tranEmailApi = new Sib.TransactionalEmailsApi();
+            let sender = { email: COMPANY_EMAIL };
+            let receivers = [{ email: user.email }];
+
+            let mailOptions = {
+              sender,
+              to: receivers,
+              subject: 'Please verify your email address.',
+              htmlContent: `<a href="${SITE_BASIC_URL}/email-verify/${tokenToVerify}">
+                Click Here to verify your email address.
+              </a>`
+            };
+
+            //  Send receiver an email.
+            tranEmailApi.sendTransacEmail(mailOptions)
+              .then((result) => {
+                console.log('# result => ', result);
+                return res.status(201).send(token);
+              })
+              .catch(error => {
+                console.log('# error => ', error);
+                return res.status(500).send(MESSAGE_EMAIL_SENT_FAILED);
+              });
+          });
+        /* ------------------------------------------------------------------- */
       });
     /* -------------------------------------------------------------------- */
   } else {
@@ -144,7 +187,7 @@ exports.signupByEmail = async (req, res) => {
     companyId = newCompany.insertId;
 
     //  Get userdata
-    userdata = await (await db.query(`
+    userdata = (await db.query(`
       SELECT 
         companies.id AS id_company,
         companies.name AS company_name,
@@ -170,12 +213,48 @@ exports.signupByEmail = async (req, res) => {
       { ...userdata },
       config.get('jwtSecret'),
       { expiresIn: '5 days' },
-      (error, token) => {
+      async (error, token) => {
         if (error) {
           console.log('# error => ', error);
           return res.status(500).send(MESSAGE_SERVER_ERROR);
         }
-        return res.status(201).send(token);
+        /* ------------------- Send email verification link ------------------ */
+        const user = (await db.query(`SELECT * FROM users WHERE id = ${userId};`))[0];
+        jwt.sign(
+          { ...user },
+          config.get('jwtSecret'),
+          { expiresIn: "2h" },
+          (error, tokenToVerify) => {
+            if (error) {
+              console.log('# error => ', error);
+              return res.status(500).send(MESSAGE_500);
+            }
+
+            const tranEmailApi = new Sib.TransactionalEmailsApi();
+            let sender = { email: COMPANY_EMAIL };
+            let receivers = [{ email: user.email }];
+
+            let mailOptions = {
+              sender,
+              to: receivers,
+              subject: 'Please verify your email address.',
+              htmlContent: `<a href="${SITE_BASIC_URL}/email-verify/${tokenToVerify}">
+                Click Here to verify your email address.
+              </a>`
+            };
+
+            //  Send receiver an email.
+            tranEmailApi.sendTransacEmail(mailOptions)
+              .then((result) => {
+                console.log('# result => ', result);
+                return res.status(201).send(token);
+              })
+              .catch(error => {
+                console.log('# error => ', error);
+                return res.status(500).send(MESSAGE_EMAIL_SENT_FAILED);
+              });
+          });
+        /* ------------------------------------------------------------------- */
       });
     /* -------------------------------------------------------------------- */
   }
@@ -660,4 +739,146 @@ exports.updateUserPassword = async (req, res) => {
     console.log('>>>>>>>>> error of updateUserPassword => ', error);
     return res.status(500).send(MESSAGE_SERVER_ERROR);
   }
+};
+
+/** Send email verification link */
+exports.resendEmailVerificationLink = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = (await db.query(`SELECT * FROM users WHERE id = ${id};`))[0];
+    jwt.sign({ ...user }, config.get('jwtSecret'), { expiresIn: "2h" }, (error, token) => {
+      if (error) {
+        console.log('# error => ', error);
+        return res.status(500).send(MESSAGE_500);
+      }
+
+      const tranEmailApi = new Sib.TransactionalEmailsApi();
+      let sender = { email: COMPANY_EMAIL };
+      let receivers = [{ email: user.email }];
+
+      let mailOptions = {
+        sender,
+        to: receivers,
+        subject: 'Please verify your email address.',
+        htmlContent: `<a href="${SITE_BASIC_URL}/email-verify/${token}">
+          Click Here to verify your email address.
+        </a>`
+      };
+
+      //  Send receiver an email.
+      tranEmailApi.sendTransacEmail(mailOptions)
+        .then((result) => {
+          console.log('# result => ', result);
+          return res.status(200).send(MESSAGE_EMAIL_SENT_SUCCESS);
+        })
+        .catch(error => {
+          console.log('# error => ', error);
+          return res.status(500).send(MESSAGE_EMAIL_SENT_FAILED);
+        });
+    });
+  } catch (error) {
+    return res.status(500).send(MESSAGE_SERVER_ERROR);
+  }
+};
+
+/** Verify email */
+exports.verifyEmail = async (req, res) => {
+  const { verificationToken } = req.params;
+
+  let userdata = null;
+
+  jwt.verify(verificationToken, config.get('jwtSecret'), async (error, user) => {
+    if (error) {
+      return res.status(401).send(MESSAGE_EMAIL_VERIFY_FAILED);
+    }
+    console.log('>>>>>> user => ', user);
+    if (user.id_user_type == ID_OF_USER_TYPE_COMPANY) {
+      userdata = (await db.query(`
+        SELECT 
+          companies.id AS id_company,
+          companies.name AS company_name,
+          companies.bio,
+          companies.site_url,
+          companies.country,
+          companies.state,
+          companies.city,
+          companies.postal_code,
+          companies.address,
+          companies.id_user,
+          users.email,
+          users.google_id,
+          users.email_verified,
+          users.avatar
+        FROM companies 
+        LEFT JOIN users ON companies.id_user = users.id
+        WHERE users.id = ${user.id};
+      `))[0];
+
+      if (user) {
+        await db.query(`
+          UPDATE users SET email_verified = ${VALUE_OF_VERIFIED} WHERE id = ${user.id};
+        `);
+        userdata.email_verified = VALUE_OF_VERIFIED;
+        jwt.sign(
+          { ...userdata },
+          config.get('jwtSecret'),
+          { expiresIn: '5 days' },
+          (error, token) => {
+            if (error) {
+              console.log('# error => ', error);
+              return res.status(500).send(MESSAGE_SERVER_ERROR);
+            }
+            console.log('# token => ', token);
+            return res.status(200).send(token);
+          });
+      } else {
+        return res.status(500).send(MESSAGE_USER_NOT_REGISTERED);
+      }
+    } else {
+      userdata = (await db.query(`
+        SELECT 
+          individuals.id AS id_individual,
+          individuals.first_name,
+          individuals.last_name,
+          individuals.bio,
+          individuals.date_of_birth,
+          individuals.country,
+          individuals.state,
+          individuals.city,
+          individuals.postal_code,
+          individuals.address,
+          individuals.phone,
+          individuals.phone_verified,
+          individuals.id_user,
+          users.email,
+          users.google_id,
+          users.email_verified,
+          users.avatar
+        FROM individuals 
+        LEFT JOIN users ON individuals.id_user = users.id
+        WHERE users.id = ${user.id};
+      `))[0];
+
+      if (user) {
+        await db.query(`
+          UPDATE users SET email_verified = ${VALUE_OF_VERIFIED} WHERE id = ${user.id};
+        `);
+        userdata.email_verified = VALUE_OF_VERIFIED;
+        jwt.sign(
+          { ...userdata },
+          config.get('jwtSecret'),
+          { expiresIn: '5 days' },
+          (error, token) => {
+            if (error) {
+              console.log('# error => ', error);
+              return res.status(500).send(MESSAGE_SERVER_ERROR);
+            }
+            console.log('# token => ', token);
+            return res.status(200).send(token);
+          });
+      } else {
+        return res.status(500).send(MESSAGE_USER_NOT_REGISTERED);
+      }
+    }
+  });
 };
