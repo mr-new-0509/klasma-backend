@@ -5,6 +5,8 @@ const {
   ID_OF_STATUS_COMPLETED,
   MESSAGE_INVEST_FINISHED,
   ID_OF_USER_TYPE_COMPANY,
+  TOKEN_CURRENCY,
+  VALUE_OF_PAID,
 } = require("../utils/constants");
 const db = require("../utils/db");
 const { getCurrentDateTime, convertTZ, getDateTimeString } = require("../utils/functions");
@@ -267,13 +269,17 @@ exports.invest = async (req, res) => {
           price, 
           id_campaign, 
           transaction_id, 
-          created_at
+          created_at,
+          paid_token_amount,
+          token_paid
         ) VALUES (
           ${id_user}, 
           ${price}, 
           ${id_campaign}, 
           "${transaction_id}", 
-          "${currentDateTime}"
+          "${currentDateTime}",
+          ${TOKEN_CURRENCY * price},
+          ${VALUE_OF_PAID}
         );
       `);
 
@@ -299,13 +305,26 @@ exports.invest = async (req, res) => {
       `);
       /* --------------------------------------------------------------- */
 
-      return res.status(201).send('');
+      return res.status(201).send(String(newInvestment.insertId));
     }
     return res.status(500).send(MESSAGE_INVEST_FINISHED);
   } catch (error) {
     console.log('>>>>>>>> error of invest => ', error);
     return res.status(500).send(MESSAGE_SERVER_ERROR);
   }
+};
+
+/** Update token_paid status */
+exports.updateTokenPaidStatus = (req, res) => {
+  const { id } = req.params;
+  const { token_paid } = req.body;
+  const currentDateTime = getCurrentDateTime();
+
+  db.query(`
+    UPDATE investments SET token_paid = ${token_paid}, updated_at = "${currentDateTime}" 
+    WHERE id = ${id};
+  `).then(result => res.status(200).send(''))
+    .catch(error => res.status(500).send(MESSAGE_SERVER_ERROR));
 };
 
 /** Check whether investment into the campaign is available or not */

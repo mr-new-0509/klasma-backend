@@ -18,6 +18,13 @@ exports.ID_OF_USER_TYPE_COMPANY = 1;
 exports.INIT_RAISED_PRICE = 0;
 exports.VALUE_OF_VERIFIED = 1;
 exports.VALUE_OF_UNVERIFIED = 0;
+exports.VALUE_OF_PAID = 1;
+exports.VALUE_OF_NOT_PAID = 0;
 
 exports.COMPANY_EMAIL = 'info@klasma.co';
 exports.SITE_BASIC_URL = "http://localhost:3000";
+
+/**
+ * TOKEN_CURRENCY = 1.2; $1 = 1.2KLASMA; token_amount = price * TOKEN_CURRENCY
+ */
+exports.TOKEN_CURRENCY = 1;
