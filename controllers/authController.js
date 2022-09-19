@@ -183,8 +183,8 @@ exports.signupByEmail = async (req, res) => {
 
     //  Insert a user into table "individuals"
     newCompany = await db.query(`
-      INSERT INTO companies (name, id_user, created_at)
-      VALUES("${companyName}", ${userId}, "${currentDateTime}")
+      INSERT INTO companies (name, id_user, created_at, phone_verified)
+      VALUES("${companyName}", ${userId}, "${currentDateTime}", ${VALUE_OF_UNVERIFIED})
     `);
     companyId = newCompany.insertId;
 
@@ -201,6 +201,9 @@ exports.signupByEmail = async (req, res) => {
         companies.postal_code,
         companies.address,
         companies.id_user,
+        companies.phone,
+        companies.phone_verified,
+        companies.date_of_birth,
         users.email,
         users.google_id,
         users.email_verified,
@@ -390,8 +393,8 @@ exports.signupByGoogle = async (req, res) => {
 
     //  Insert a user into table "individuals"
     newCompany = await db.query(`
-      INSERT INTO companies (id_user, created_at)
-      VALUES(${userId}, "${currentDateTime}")
+      INSERT INTO companies (id_user, created_at, phone_verified)
+      VALUES(${userId}, "${currentDateTime}", ${VALUE_OF_VERIFIED});
     `);
     companyId = newCompany.insertId;
 
@@ -408,6 +411,9 @@ exports.signupByGoogle = async (req, res) => {
         companies.postal_code,
         companies.address,
         companies.id_user,
+        companies.phone,
+        companies.phone_verified,
+        companies.date_of_birth,
         users.email,
         users.google_id,
         users.email_verified,
@@ -482,6 +488,9 @@ exports.signinByEmail = async (req, res) => {
         companies.postal_code,
         companies.address,
         companies.id_user,
+        companies.phone,
+        companies.phone_verified,
+        companies.date_of_birth,
         users.email,
         users.google_id,
         users.email_verified,
@@ -544,7 +553,7 @@ exports.updateUserProfile = async (req, res) => {
     await db.query(`
       UPDATE companies
       SET 
-        company_name = "${String(company_name).replace(/"/g, '\'\'')}",
+        name = "${String(company_name).replace(/"/g, '\'\'')}",
         bio = "${String(bio).replace(/"/g, '\'\'')}",
         phone = "${phone}",
         date_of_birth = "${date_of_birth}",
@@ -569,6 +578,9 @@ exports.updateUserProfile = async (req, res) => {
           companies.postal_code,
           companies.address,
           companies.id_user,
+          companies.phone,
+          companies.phone_verified,
+          companies.date_of_birth,
           users.email,
           users.google_id,
           users.email_verified,
@@ -701,6 +713,9 @@ exports.updateUserPassword = async (req, res) => {
           companies.postal_code,
           companies.address,
           companies.id_user,
+          companies.phone,
+          companies.phone_verified,
+          companies.date_of_birth,
           users.email,
           users.google_id,
           users.email_verified,
@@ -835,6 +850,9 @@ exports.verifyEmail = async (req, res) => {
           companies.postal_code,
           companies.address,
           companies.id_user,
+          companies.phone,
+          companies.phone_verified,
+          companies.date_of_birth,
           users.email,
           users.google_id,
           users.email_verified,
@@ -944,6 +962,9 @@ exports.updateWalletAddress = async (req, res) => {
           companies.postal_code,
           companies.address,
           companies.id_user,
+          companies.phone,
+          companies.phone_verified,
+          companies.date_of_birth,
           users.email,
           users.google_id,
           users.email_verified,
