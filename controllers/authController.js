@@ -837,104 +837,109 @@ exports.verifyEmail = async (req, res) => {
       return res.status(401).send(MESSAGE_EMAIL_VERIFY_FAILED);
     }
     console.log('>>>>>> user => ', user);
-    if (user.id_user_type == ID_OF_USER_TYPE_COMPANY) {
-      userdata = (await db.query(`
-        SELECT 
-          companies.id AS id_company,
-          companies.name AS company_name,
-          companies.bio,
-          companies.site_url,
-          companies.country,
-          companies.state,
-          companies.city,
-          companies.postal_code,
-          companies.address,
-          companies.id_user,
-          companies.phone,
-          companies.phone_verified,
-          companies.date_of_birth,
-          users.email,
-          users.google_id,
-          users.email_verified,
-          users.avatar,
-          users.wallet_address,
-          users.id_user_type
-        FROM companies 
-        LEFT JOIN users ON companies.id_user = users.id
-        WHERE users.id = ${user.id};
-      `))[0];
+    try {
+      if (user.id_user_type == ID_OF_USER_TYPE_COMPANY) {
+        userdata = (await db.query(`
+          SELECT 
+            companies.id AS id_company,
+            companies.name AS company_name,
+            companies.bio,
+            companies.site_url,
+            companies.country,
+            companies.state,
+            companies.city,
+            companies.postal_code,
+            companies.address,
+            companies.id_user,
+            companies.phone,
+            companies.phone_verified,
+            companies.date_of_birth,
+            users.email,
+            users.google_id,
+            users.email_verified,
+            users.avatar,
+            users.wallet_address,
+            users.id_user_type
+          FROM companies 
+          LEFT JOIN users ON companies.id_user = users.id
+          WHERE users.id = ${user.id};
+        `))[0];
 
-      if (user) {
-        await db.query(`
-          UPDATE users 
-          SET email_verified = ${VALUE_OF_VERIFIED}, updated_at = "${currentDateTime}"
-          WHERE id = ${user.id};
-        `);
-        userdata.email_verified = VALUE_OF_VERIFIED;
-        jwt.sign(
-          { ...userdata },
-          config.get('jwtSecret'),
-          { expiresIn: '5 days' },
-          (error, token) => {
-            if (error) {
-              console.log('# error => ', error);
-              return res.status(500).send(MESSAGE_SERVER_ERROR);
-            }
-            console.log('# token => ', token);
-            return res.status(200).send(token);
-          });
+        if (user) {
+          await db.query(`
+            UPDATE users 
+            SET email_verified = ${VALUE_OF_VERIFIED}, updated_at = "${currentDateTime}"
+            WHERE id = ${user.id};
+          `);
+          userdata.email_verified = VALUE_OF_VERIFIED;
+          jwt.sign(
+            { ...userdata },
+            config.get('jwtSecret'),
+            { expiresIn: '5 days' },
+            (error, token) => {
+              if (error) {
+                console.log('# error => ', error);
+                return res.status(500).send(MESSAGE_SERVER_ERROR);
+              }
+              console.log('# token => ', token);
+              return res.status(200).send(token);
+            });
+        } else {
+          return res.status(500).send(MESSAGE_USER_NOT_REGISTERED);
+        }
       } else {
-        return res.status(500).send(MESSAGE_USER_NOT_REGISTERED);
-      }
-    } else {
-      userdata = (await db.query(`
-        SELECT 
-          individuals.id AS id_individual,
-          individuals.first_name,
-          individuals.last_name,
-          individuals.bio,
-          individuals.date_of_birth,
-          individuals.country,
-          individuals.state,
-          individuals.city,
-          individuals.postal_code,
-          individuals.address,
-          individuals.phone,
-          individuals.phone_verified,
-          individuals.id_user,
-          users.email,
-          users.google_id,
-          users.email_verified,
-          users.avatar,
-          users.wallet_address,
-          users.id_user_type
-        FROM individuals 
-        LEFT JOIN users ON individuals.id_user = users.id
-        WHERE users.id = ${user.id};
-      `))[0];
+        userdata = (await db.query(`
+          SELECT 
+            individuals.id AS id_individual,
+            individuals.first_name,
+            individuals.last_name,
+            individuals.bio,
+            individuals.date_of_birth,
+            individuals.country,
+            individuals.state,
+            individuals.city,
+            individuals.postal_code,
+            individuals.address,
+            individuals.phone,
+            individuals.phone_verified,
+            individuals.id_user,
+            users.email,
+            users.google_id,
+            users.email_verified,
+            users.avatar,
+            users.wallet_address,
+            users.id_user_type
+          FROM individuals 
+          LEFT JOIN users ON individuals.id_user = users.id
+          WHERE users.id = ${user.id};
+        `))[0];
 
-      if (user) {
-        await db.query(`
-          UPDATE users 
-          SET email_verified = ${VALUE_OF_VERIFIED}, updated_at = "${currentDateTime}"
-          WHERE id = ${user.id};
-        `);
-        userdata.email_verified = VALUE_OF_VERIFIED;
-        jwt.sign(
-          { ...userdata },
-          config.get('jwtSecret'),
-          { expiresIn: '5 days' },
-          (error, token) => {
-            if (error) {
-              console.log('# error => ', error);
-              return res.status(500).send(MESSAGE_SERVER_ERROR);
-            }
-            console.log('# token => ', token);
-            return res.status(200).send(token);
-          });
-      } else {
-        return res.status(500).send(MESSAGE_USER_NOT_REGISTERED);
+        if (user) {
+          await db.query(`
+            UPDATE users 
+            SET email_verified = ${VALUE_OF_VERIFIED}, updated_at = "${currentDateTime}"
+            WHERE id = ${user.id};
+          `);
+          userdata.email_verified = VALUE_OF_VERIFIED;
+          jwt.sign(
+            { ...userdata },
+            config.get('jwtSecret'),
+            { expiresIn: '5 days' },
+            (error, token) => {
+              if (error) {
+                console.log('# error => ', error);
+                return res.status(500).send(MESSAGE_SERVER_ERROR);
+              }
+              console.log('# token => ', token);
+              return res.status(200).send(token);
+            });
+        } else {
+          return res.status(500).send(MESSAGE_USER_NOT_REGISTERED);
+        }
       }
+    } catch (error1) {
+      console.log('>>>>>>>> error => error of verifyEmail => ', error1);
+      return res.status(500).send(MESSAGE_SERVER_ERROR);
     }
   });
 };
