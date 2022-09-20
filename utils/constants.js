@@ -22,7 +22,7 @@ exports.VALUE_OF_PAID = 1;
 exports.VALUE_OF_NOT_PAID = 0;
 
 exports.COMPANY_EMAIL = 'info@klasma.co';
-exports.SITE_BASIC_URL = "http://localhost:3000";
+exports.SITE_BASIC_URL = "https://klasma.co";
 
 /**
  * TOKEN_CURRENCY = 1.2; $1 = 1.2KLASMA; token_amount = price * TOKEN_CURRENCY
