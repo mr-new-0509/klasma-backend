@@ -556,7 +556,7 @@ exports.updateUserProfile = async (req, res) => {
         name = "${String(company_name).replace(/"/g, '\'\'')}",
         bio = "${String(bio).replace(/"/g, '\'\'')}",
         phone = "${phone}",
-        date_of_birth = "${date_of_birth}",
+        ${date_of_birth ? `date_of_birth = "${date_of_birth}",` : ''}
         country = "${String(country).replace(/"/g, '\'\'')}",
         state = "${String(state).replace(/"/g, '\'\'')}",
         city = "${String(city).replace(/"/g, '\'\'')}",
@@ -616,7 +616,7 @@ exports.updateUserProfile = async (req, res) => {
         last_name = "${String(last_name).replace(/"/g, '\'\'')}",
         bio = "${String(bio).replace(/"/g, '\'\'')}",
         phone = "${phone}",
-        date_of_birth = "${date_of_birth}",
+        ${date_of_birth ? `date_of_birth = "${date_of_birth}",` : ''}
         country = "${String(country).replace(/"/g, '\'\'')}",
         state = "${String(state).replace(/"/g, '\'\'')}",
         city = "${String(city).replace(/"/g, '\'\'')}",
